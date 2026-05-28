@@ -477,10 +477,20 @@ async function load(){
       supa.from('clientes').select('*')
     ]);
     if(pErr)throw pErr;
-    pedidos=pData||[];
+    // Pedidos: mapear campo cliente a estructura esperada
+    pedidos=(pData||[]).map(p=>({
+      ...p,
+      cafeNombre:p.cafeNombre||p.cafe_nombre||'',
+      cafeContacto:p.cafeContacto||p.cafe_contacto||'',
+      codigo:p.codigo||'',
+      estado:p.estado||'pendiente',
+      items:p.items||[]
+    }));
+    // Catálogo
     if(cData&&cData.length>0){cat=cData.map(c=>({...c,on:c.on_stock}));}
     else{await seedCatalogo();}
-    clientes=clData||[];
+    // Clientes: normalizar creado_en vs creadoEn
+    clientes=(clData||[]).map(c=>({...c,creadoEn:c.creadoEn||c.creado_en||''}));
     cafeterias=storageGet(CAF_K)||JSON.parse(JSON.stringify(CAF_BASE));
     setDbStatus('ok');
   }catch(e){
