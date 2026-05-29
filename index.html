@@ -526,12 +526,14 @@ function onCafeChange(){
 }
 function savePeds(){try{localStorage.setItem(SK,JSON.stringify(pedidos));}catch(e){}}
 async function insertPedidoSupa(p){
-  const row={id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:p.cliente,contacto:p.contacto||'',items:p.items,comision:p.comision||0};
+  const cli=p.canal==='cafeteria'?(p.cafeNombre||p.cliente||''):(p.cliente||'');
+  const row={id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:cli,contacto:p.cafeContacto||p.contacto||'',items:p.items,comision:p.comision||0};
   const{error}=await supa.from('pedidos').insert([row]);
   if(error)console.error('Error Supabase pedido:',error);
 }
 async function updatePedidoSupa(p){
-  const{error}=await supa.from('pedidos').upsert({id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:p.cliente,contacto:p.contacto||'',items:p.items,comision:p.comision||0});
+  const cli=p.canal==='cafeteria'?(p.cafeNombre||p.cliente||''):(p.cliente||'');
+  const{error}=await supa.from('pedidos').upsert({id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:cli,contacto:p.cafeContacto||p.contacto||'',items:p.items,comision:p.comision||0});
   if(error)console.error('Error Supabase update pedido:',error);
 }
 async function deletePedidoSupa(id){
@@ -775,8 +777,10 @@ async function savePedido(){
   const cafeContacto=cafeteria?document.getElementById('cafe-contacto').value:'';
   const kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=calcCom(kp,kn);
   const codigo=genCodigo(fecha,canal);
-  const p={id:Date.now(),codigo,fecha,mes,canal,cafeNombre,cafeContacto,items:[...items],comision:com,estado:'pendiente'};
-  pedidos.push(p);savePeds();
+  const cli=cafeteria?cafeNombre:(items[0]?.clienteNombre||'');
+  const p={id:Date.now(),codigo,fecha,mes,canal,cliente:cli,cafeNombre,cafeContacto,items:[...items],comision:com,estado:'pendiente'};
+  pedidos.unshift(p);savePeds();
+  await insertPedidoSupa(p);
   const kt=getKgMes(mes);
   const nCli=[...new Set(items.map(i=>i.clienteNombre).filter(Boolean))].length;
   let msg=`✅ Pedido guardado\nCódigo: ${codigo}\n${nCli} cliente${nCli!==1?'s':''} · ${kn.toFixed(2)} kg\nComisión: $${com.toLocaleString('es-CL')}`;
@@ -838,7 +842,10 @@ function renderCat(){
   document.getElementById('cat-grid').innerHTML=cat.map((c,i)=>{
     const dk=desc(c.ku,c.km),d2=desc(c.gu,c.gm);
     return`<div class="cc ${c.on?'':'off'}">
-      <div class="cc-tog"><button class="togbtn" onclick="togCat(${i})">${c.on?'⏸ Pausar':'▶ Activar'}</button></div>
+      <div class="cc-tog" style="display:flex;gap:4px;">
+        <button class="togbtn" onclick="togCat(${i})">${c.on?'⏸ Pausar':'▶ Activar'}</button>
+        <button class="togbtn" style="color:#dc2626;border-color:#fca5a5;" onclick="eliminarOrigen(${i})">🗑</button>
+      </div>
       <div class="cc-name">${c.n}${c.nuevo?'<span class="nbadge">NUEVO</span>':''}</div>
       <div class="cc-var">${c.p} · ${c.v}</div>
       ${c.perf?`<div class="cc-perf">${c.perf}</div>`:''}
@@ -852,6 +859,14 @@ function renderCat(){
   }).join('');
 }
 async function togCat(i){cat[i].on=!cat[i].on;saveCatData();await updateCatSupa(cat[i]);renderCat();fillOrigen();}
+async function eliminarOrigen(i){
+  const c=cat[i];
+  if(!confirm('¿Eliminar "'+c.n+'" del catálogo? Esta acción no se puede deshacer.'))return;
+  cat.splice(i,1);saveCatData();
+  const{error}=await supa.from('catalogo').delete().eq('n',c.n);
+  if(error)console.error('Error eliminando origen:',error);
+  renderCat();fillOrigen();
+}
 async function addOrigen(){
   const n=document.getElementById('nn').value.trim(),p=document.getElementById('np').value;
   const v=document.getElementById('nv').value.trim();
