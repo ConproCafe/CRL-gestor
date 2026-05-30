@@ -172,12 +172,10 @@ textarea{resize:vertical;min-height:52px;}
 <div class="container">
 <div class="tabs">
   <button class="tab active" onclick="showTab('nuevo',this)">Nuevo pedido</button>
-  <button class="tab" onclick="showTab('interpretar',this)">📋 Interpretar texto</button>
   <button class="tab" onclick="showTab('mes',this)">Mes actual</button>
   <button class="tab" onclick="showTab('catalogo',this)">Catálogo</button>
   <button class="tab" onclick="showTab('clientes',this)">Clientes</button>
   <button class="tab" onclick="showTab('historial',this)">Historial</button>
-  <button class="tab" onclick="showTab('interpretar',this)">📋 Interpretar</button>
 </div>
 
 <!-- NUEVO PEDIDO -->
@@ -339,6 +337,16 @@ textarea{resize:vertical;min-height:52px;}
 <div class="card">
   <div class="krow" id="cl-kpi" style="grid-template-columns:repeat(3,1fr);margin-bottom:0;"></div>
 </div>
+<div class="card" style="padding:10px 14px;">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input type="text" id="cl-buscar" placeholder="🔍 Buscar por nombre o teléfono..." oninput="renderClientes()" style="flex:1;min-width:160px;"/>
+    <select id="cl-orden" onchange="renderClientes()" style="width:auto;font-size:12px;padding:8px 10px;">
+      <option value="kg">↓ Mayor volumen</option>
+      <option value="nombre">A → Z nombre</option>
+      <option value="reciente">Más reciente</option>
+    </select>
+  </div>
+</div>
 <div class="card" id="card-nuevo-cl">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
     <button class="btn btn-primary btn-sm" onclick="toggleFormCl()" id="btn-toggle-cl">+ Agregar cliente</button>
@@ -360,60 +368,12 @@ textarea{resize:vertical;min-height:52px;}
 <div id="cl-lista"></div>
 </div>
 
-<!-- INTERPRETAR TEXTO -->
-<div id="panel-interpretar" class="panel">
-<div class="card">
-  <div class="section-title">📋 Interpretar texto como pedido</div>
-  <div class="alert al-info" style="margin-bottom:10px;"><div class="al-ic">💡</div><div>Pega un mensaje de WhatsApp, una lista o cualquier texto con un pedido. La IA lo interpretará y lo convertirá en ítems listos para guardar.</div></div>
-  <div class="field" style="margin-bottom:10px;">
-    <div class="lbl">Texto del pedido</div>
-    <textarea id="txt-interpretar" rows="6" placeholder="Ej: Hola! quiero 2 kg de Colombia en grano y 1 kg de Brasil molido espresso. También 500 gr de Etiopía filtrado. Gracias!"></textarea>
-  </div>
-  <div class="field-row" style="margin-bottom:10px;">
-    <div class="field">
-      <div class="lbl">Cliente</div>
-      <div class="ac-wrap">
-        <input type="text" id="int-cliente" placeholder="Nombre del comprador..." autocomplete="off" oninput="acBuscarInt(this.value)" onfocus="acBuscarInt(this.value)"/>
-        <div class="ac-list" id="ac-list-int" style="display:none;"></div>
-      </div>
-    </div>
-    <div class="field">
-      <div class="lbl">Fecha</div>
-      <input type="date" id="int-fecha"/>
-    </div>
-  </div>
-  <button class="btn btn-primary" onclick="interpretarTexto()"><span id="int-spin" style="display:none;" class="spin"></span>Interpretar con IA</button>
-</div>
-<div id="int-resultado" style="display:none;">
-<div class="card">
-  <div class="section-title">Resultado interpretado</div>
-  <div id="int-items-list"></div>
-  <div id="int-res-content" class="sbox" style="margin-top:10px;display:none;"></div>
-  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;">
-    <button class="btn btn-primary" onclick="confirmarInterpretado()">✓ Usar estos ítems en nuevo pedido</button>
-    <button class="btn" onclick="document.getElementById('int-resultado').style.display='none'">Cancelar</button>
-  </div>
-</div>
-</div>
-</div>
 
 <!-- HISTORIAL -->
 <div id="panel-historial" class="panel">
   <div id="hist-content"></div>
 </div>
 
-<!-- INTERPRETAR MENSAJE -->
-<div id="panel-interpretar" class="panel">
-<div class="card">
-  <div class="section-title">📋 Interpretar mensaje de pedido</div>
-  <div class="field" style="margin-bottom:10px;">
-    <div class="lbl">Pega el mensaje de WhatsApp</div>
-    <textarea id="msg-input" style="min-height:120px;" placeholder="Ej: Hola! Quiero 2 kg de Colombia molido espresso y 1 kg de Brasil en grano para María González"></textarea>
-  </div>
-  <button class="btn btn-primary" onclick="interpretarMensaje()"><span id="ispin" style="display:none;" class="spin"></span>Interpretar con IA</button>
-  <div id="interp-res" style="margin-top:12px;"></div>
-</div>
-</div>
 
 <!-- MODAL -->
 <div id="ov" class="ov" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
@@ -478,13 +438,14 @@ async function load(){
     ]);
     if(pErr)throw pErr;
     // Pedidos: mapear campo cliente a estructura esperada
+    const normNombre=n=>n?n.replace('Günther Heine','Günter Heine').replace('Barbara Yañez','Bárbara Yáñez').replace('Sole Larrea','Soledad Larrea').replace('Hector Cárdenas','Héctor Cárdenas'):n;
     pedidos=(pData||[]).map(p=>({
       ...p,
       cafeNombre:p.cafeNombre||p.cafe_nombre||'',
       cafeContacto:p.cafeContacto||p.cafe_contacto||'',
       codigo:p.codigo||'',
       estado:p.estado||'pendiente',
-      items:p.items||[]
+      items:(p.items||[]).map(it=>({...it,clienteNombre:normNombre(it.clienteNombre)}))
     }));
     // Catálogo
     if(cData&&cData.length>0){cat=cData.map(c=>({...c,on:c.on_stock}));}
@@ -995,6 +956,8 @@ async function addCliente(){
   renderClientes();
 }
 function renderClientes(){
+  const buscar=(document.getElementById('cl-buscar')?.value||'').toLowerCase();
+  const orden=document.getElementById('cl-orden')?.value||'kg';
   const todos=getAllCl(),kpi=document.getElementById('cl-kpi'),lista=document.getElementById('cl-lista');
   // Mostrar todos los clientes registrados, con o sin pedidos
   const conFicha=todos.filter(x=>x.cl.id);
