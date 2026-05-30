@@ -202,6 +202,12 @@ textarea{resize:vertical;min-height:52px;}
       <div class="field"><div class="lbl">Contacto</div><input type="text" id="cafe-contacto" placeholder="Ej: María Edwards"/></div>
     </div>
   </div>
+  <div id="campo-delivery" style="margin-top:8px;display:none;">
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 10px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">
+      <input type="checkbox" id="chk-delivery" style="width:auto;" onchange="renderItems()"/>
+      <span>Incluir delivery — <strong id="delivery-price-lbl">$3.500</strong></span>
+    </label>
+  </div>
   <div id="cod-preview" style="font-size:10px;color:#9ca3af;margin-top:4px;"></div>
 </div>
 
@@ -333,6 +339,17 @@ textarea{resize:vertical;min-height:52px;}
     </label>
   </div>
   <div id="new-res" style="margin-top:8px;"></div>
+</div>
+<div class="card">
+  <div class="section-title">⚙️ Configuración de delivery</div>
+  <div class="field-row" style="align-items:flex-end;">
+    <div class="field">
+      <div class="lbl">Precio delivery ($)</div>
+      <input type="number" id="delivery-price-input" placeholder="3500" style="max-width:180px;"/>
+    </div>
+    <button class="btn btn-primary" onclick="saveDeliveryPrice()" style="height:38px;">Guardar</button>
+  </div>
+  <div id="delivery-res" style="margin-top:8px;"></div>
 </div>
 </div>
 
@@ -596,6 +613,12 @@ document.addEventListener('click',e=>{if(!e.target.closest('.ac-wrap'))document.
 function onCanalChange(){
   const v=document.getElementById('canal').value;
   document.getElementById('campo-caf-hdr').style.display=v==='cafeteria'?'block':'none';
+  const delWrap=document.getElementById('campo-delivery');
+  if(delWrap){
+    delWrap.style.display='block';
+    const chk=document.getElementById('chk-delivery');
+    if(chk)chk.checked=v==='cafeteria';
+  }
   if(v==='cafeteria')fillCafeSel();
   document.getElementById('campo-cliente-item').style.display=v==='cafeteria'?'none':'block';
   const pb=document.getElementById('pill-balde');
@@ -729,7 +752,7 @@ function renderItems(){
       ${filas}
     </div>`;
   }).join('');
-  const canal=document.getElementById('canal').value,del=canal==='cafeteria'?3500:0;
+  const canal=document.getElementById('canal').value,del=getDelivery();
   const sub=items.reduce((s,i)=>s+i.totalP,0),tkg=items.reduce((s,i)=>s+i.totalKg,0);
   const temp=items.reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
   const nclientes=Object.keys(porCliente).length;
@@ -740,11 +763,16 @@ function renderItems(){
     <div class="srow"><span class="slb">Total kg</span><span class="svl">${tkg.toFixed(2)} kg</span></div>
     <div class="srow"><span class="slb">Subtotal café</span><span class="svl">$${sub.toLocaleString('es-CL')}</span></div>
     ${temp?`<div class="srow"><span class="slb" style="color:#6d28d9;">↳ empaque doble</span><span class="svl" style="color:#6d28d9;">$${temp.toLocaleString('es-CL')}</span></div>`:''}
-    ${del?`<div class="srow"><span class="slb">Delivery</span><span class="svl">$3.500</span></div>`:''}
+    ${del?`<div class="srow"><span class="slb">Delivery</span><span class="svl">$${del.toLocaleString('es-CL')}</span></div>`:''}
     <div class="srow"><span class="slb">Total</span><span class="svl">$${(sub+del).toLocaleString('es-CL')}</span></div>`;
 }
 function rmItem(i){items.splice(i,1);renderItems();}
 
+function getDeliveryPrice(){return parseInt(localStorage.getItem('crl_delivery_price')||'3500');}
+function getDelivery(){
+  const chk=document.getElementById('chk-delivery');
+  return(chk&&chk.checked)?getDeliveryPrice():0;
+}
 function getKgMes(m){return pedidos.filter(p=>p.mes===m).reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);}
 function calcCom(kp,kn){let c=0;for(let k=0;k<kn;k+=.25)c+=((kp+k>=CU)?CA:CB)*.25;return Math.round(c);}
 
@@ -765,7 +793,8 @@ async function savePedido(){
   const kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=calcCom(kp,kn);
   const codigo=genCodigo(fecha,canal);
   const cli=cafeteria?cafeNombre:(items[0]?.clienteNombre||'');
-  const p={id:Date.now(),codigo,fecha,mes,canal,cliente:cli,cafeNombre,cafeContacto,items:[...items],comision:com,estado:'pendiente'};
+  const delMonto=getDelivery();
+  const p={id:Date.now(),codigo,fecha,mes,canal,cliente:cli,cafeNombre,cafeContacto,items:[...items],comision:com,estado:'pendiente',delivery:delMonto};
   pedidos.unshift(p);savePeds();
   await insertPedidoSupa(p);
   const kt=getKgMes(mes);
@@ -785,7 +814,7 @@ function mostrarOC(p){
 }
 
 function genDoc(p){
-  const sub=p.items.reduce((s,i)=>s+i.totalP,0),del=p.canal==='cafeteria'?3500:0;
+  const sub=p.items.reduce((s,i)=>s+i.totalP,0),del=p.delivery||0;
   const tkg=p.items.reduce((s,i)=>s+i.totalKg,0),temp=p.items.reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
   const fd=p.fecha?new Date(p.fecha+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'}):'';
   const cod=p.codigo||'—';
@@ -796,7 +825,7 @@ function genDoc(p){
   t+=`${'─'.repeat(68)}\n`;
   if(temp)t+=`* 2×500gr: cargo empaque doble $${EMP}/kg · Total empaque: $${temp.toLocaleString('es-CL')}\n`;
   t+=`Total kg: ${tkg.toFixed(2)} kg\nSubtotal: $${sub.toLocaleString('es-CL')}\n`;
-  if(del)t+=`Delivery: $3.500\n`;
+  if(del)t+=`Delivery: $${del.toLocaleString('es-CL')}\n`;
   t+=`TOTAL: $${(sub+del).toLocaleString('es-CL')} (IVA incl.)\n${'─'.repeat(56)}\nGenerado por CRL Gestor de Pedidos · Canal WhatsApp Mayorista\n`;
   return t;
 }
@@ -847,6 +876,14 @@ function renderCat(){
   }).join('');
 }
 async function togCat(i){cat[i].on=!cat[i].on;saveCatData();await updateCatSupa(cat[i]);renderCat();fillOrigen();}
+function saveDeliveryPrice(){
+  const val=parseInt(document.getElementById('delivery-price-input').value);
+  if(!val||val<0){document.getElementById('delivery-res').innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Ingresa un precio válido.</div></div>';return;}
+  localStorage.setItem('crl_delivery_price',val);
+  document.getElementById('delivery-price-lbl').textContent='$'+val.toLocaleString('es-CL');
+  document.getElementById('delivery-res').innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div>Delivery actualizado a $${val.toLocaleString('es-CL')}.</div></div>`;
+  setTimeout(()=>document.getElementById('delivery-res').innerHTML='',3000);
+}
 async function eliminarOrigen(i){
   const c=cat[i];
   if(!confirm('¿Eliminar "'+c.n+'" del catálogo? Esta acción no se puede deshacer.'))return;
@@ -1141,7 +1178,7 @@ function cambiarEstado(id,val){
 function renderMes(){
   const mp=pedidos.filter(p=>p.mes===MES_ACTUAL);
   const tkg=mp.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
-  const tm=mp.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0)+(p.canal==='cafeteria'?3500:0),0);
+  const tm=mp.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0)+(p.delivery||0),0);
   const tc=mp.reduce((s,p)=>s+(p.comision||0),0);
   const ckv=mp.filter(p=>p.canal==='cafeteria').reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
   const cow=mp.filter(p=>p.canal==='comunidad').reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
@@ -1171,7 +1208,7 @@ function renderMes(){
   const mx=Math.max(...Object.values(po),1);
   document.getElementById('bars-mes').innerHTML=Object.keys(po).length?'<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Por origen</div>'+Object.entries(po).sort((a,b)=>b[1]-a[1]).map(([o,k])=>`<div><div class="ob-lbl"><span>${o}</span><span>${k.toFixed(2)} kg</span></div><div class="ob-track"><div class="ob-fill" style="width:${Math.round(k/mx*100)}%;background:${COLORS[o]||'#888'};"></div></div></div>`).join(''):'';
   document.getElementById('ped-mes').innerHTML=mp.length?mp.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
-    const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp3=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);
+    const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp3=p.items.reduce((s,i)=>s+i.totalP,0)+(p.delivery||0);
     const est=p.estado||'pendiente',ec=EST_CFG[est]||EST_CFG.pendiente;
     const opts=Object.entries(EST_CFG).map(([v,c])=>`<option value="${v}" ${v===est?'selected':''}>${c.lbl}</option>`).join('');
     return`<div class="card" style="border-left:3px solid ${est==='entregado'?'#86efac':est==='pagado'?'#c4b5fd':est==='confirmado'?'#93c5fd':'#fbbf24'};">
@@ -1194,7 +1231,7 @@ function renderMes(){
 function genReporteTexto(){
   const mp=pedidos.filter(p=>p.mes===MES_ACTUAL);if(!mp.length)return'Sin pedidos este mes.';
   const tkg=mp.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
-  const tm=mp.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0)+(p.canal==='cafeteria'?3500:0),0);
+  const tm=mp.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0)+(p.delivery||0),0);
   const tc=mp.reduce((s,p)=>s+(p.comision||0),0);
   const po={};mp.forEach(p=>p.items.forEach(i=>{po[i.origen]=(po[i.origen]||{kg:0,monto:0});po[i.origen].kg+=i.totalKg;po[i.origen].monto+=i.totalP;}));
   const cow=mp.filter(p=>p.canal==='comunidad').reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
@@ -1204,7 +1241,7 @@ function genReporteTexto(){
   Object.entries(po).sort((a,b)=>b[1].kg-a[1].kg).forEach(([o,d])=>t+=`${o.padEnd(18)} ${d.kg.toFixed(2)} kg · $${d.monto.toLocaleString('es-CL')}\n`);
   t+=`\nPERFILES DE CLIENTES\n`;cl.forEach(c=>t+=`${c.nombre.padEnd(22)} ${c.perfil} · ${c.tkg.toFixed(2)} kg\n`);
   t+=`\nDETALLE\n`;
-  mp.forEach((p,i)=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp2=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);t+=`\n${i+1}. ${p.fecha} · ${p.cliente} · ${p.canal==='comunidad'?'WhatsApp':'B2B'}\n`;p.items.forEach(it=>t+=`   ${it.origen} · ${it.formato} · ${it.cantidad}× ${it.label} · $${it.totalP.toLocaleString('es-CL')}\n`);t+=`   Total: $${mp2.toLocaleString('es-CL')} · Comisión: $${(p.comision||0).toLocaleString('es-CL')}\n`;});
+  mp.forEach((p,i)=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp2=p.items.reduce((s,i)=>s+i.totalP,0)+(p.delivery||0);t+=`\n${i+1}. ${p.fecha} · ${p.cliente} · ${p.canal==='comunidad'?'WhatsApp':'B2B'}\n`;p.items.forEach(it=>t+=`   ${it.origen} · ${it.formato} · ${it.cantidad}× ${it.label} · $${it.totalP.toLocaleString('es-CL')}\n`);t+=`   Total: $${mp2.toLocaleString('es-CL')} · Comisión: $${(p.comision||0).toLocaleString('es-CL')}\n`;});
   t+=`\n${'═'.repeat(54)}\nGenerado: ${new Date().toLocaleDateString('es-CL')}\n`;return t;
 }
 
@@ -1322,11 +1359,11 @@ function renderHist(){
   const el=document.getElementById('hist-content');
   if(!pedidos.length){el.innerHTML='<div class="empty">Sin pedidos registrados.</div>';return;}
   el.innerHTML=Object.entries(pm).sort((a,b)=>b[0].localeCompare(a[0])).map(([mes,ps],mi)=>{
-    const kg=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0),m=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0)+(p.canal==='cafeteria'?3500:0),0),com=ps.reduce((s,p)=>s+(p.comision||0),0);
+    const kg=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0),m=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0)+(p.delivery||0),0),com=ps.reduce((s,p)=>s+(p.comision||0),0);
     const mesId=mes.replace('-','');
     const abierto=mi===0; // solo el más reciente abierto por defecto
     const filas=ps.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
-      const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);
+      const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0)+(p.delivery||0);
       const est=p.estado||'pendiente',ec=EST_CFG[est]||EST_CFG.pendiente;
       return`<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-top:1px solid #f3f4f6;gap:8px;flex-wrap:wrap;">
         <div style="flex:1;min-width:0;">
@@ -1435,7 +1472,14 @@ function limpiar(){
 // INIT
 document.getElementById('hoy-lbl').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('fecha').value=hoy();
-load().then(()=>{fillOrigen();fillCafeSel();});
+load().then(()=>{
+  fillOrigen();fillCafeSel();
+  const dp=getDeliveryPrice();
+  const lbl=document.getElementById('delivery-price-lbl');
+  if(lbl)lbl.textContent='$'+dp.toLocaleString('es-CL');
+  const inp=document.getElementById('delivery-price-input');
+  if(inp)inp.value=dp;
+});
 </script>
 </body>
 </html>
