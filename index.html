@@ -321,6 +321,10 @@ textarea{resize:vertical;min-height:52px;}
     <div class="field"><div class="lbl">$ Unit. Kg</div><input type="number" id="nku" placeholder="38000"/></div>
     <div class="field"><div class="lbl">$ Unit. 250gr</div><input type="number" id="n2u" placeholder="13000"/></div>
   </div>
+  <div class="field-row" style="margin-bottom:8px;">
+    <div class="field"><div class="lbl">$ May. Balde <span style="font-weight:400;font-size:9px;">(opcional)</span></div><input type="number" id="nbm" placeholder="Ej: 192900"/></div>
+    <div class="field"><div class="lbl">Kg por balde <span style="font-weight:400;font-size:9px;">(opcional)</span></div><input type="number" id="nbkg" placeholder="Ej: 6" step="0.5"/></div>
+  </div>
   <div class="field" style="margin-bottom:10px;"><div class="lbl">Perfil de taza</div><textarea id="nperf" placeholder="Caramelo, frutos rojos..."></textarea></div>
   <div style="display:flex;gap:8px;align-items:center;">
     <button class="btn btn-primary" onclick="addOrigen()">Agregar al catálogo</button>
@@ -503,7 +507,7 @@ async function deletePedidoSupa(id){
 }
 function saveCatData(){try{localStorage.setItem(CK,JSON.stringify(cat));}catch(e){}}
 async function updateCatSupa(c){
-  const{error}=await supa.from('catalogo').upsert({n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,ku:c.ku,gu:c.gu,perf:c.perf,on_stock:c.on,nuevo:c.nuevo||false});
+  const{error}=await supa.from('catalogo').upsert({n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,ku:c.ku,gu:c.gu,perf:c.perf,on_stock:c.on,nuevo:c.nuevo||false,bm:c.bm||null,bkg:c.bkg||null});
   if(error)console.error('Error Supabase cat:',error);
 }
 function saveCls(){try{localStorage.setItem(CLK,JSON.stringify(clientes));}catch(e){}}
@@ -609,7 +613,10 @@ function selU(el){
   const lb=document.getElementById('cant-lbl');
   if(uAct==='kg')lb.textContent='(nº de kilos)';
   else if(uAct==='2x500')lb.textContent='(nº de paquetes dobles)';
-  else if(uAct==='balde6')lb.textContent='(nº de baldes — cada uno 6 kg)';
+  else if(uAct==='balde6'){
+    const n=document.getElementById('origen').value,c=getCat(n);
+    lb.textContent=`(nº de baldes — cada uno ${c?.bkg||6} kg)`;
+  }
   else lb.textContent='(nº de fracciones 250gr)';
   updHint();updRI();
 }
@@ -618,11 +625,30 @@ function getPU(){
   const n=document.getElementById('origen').value,c=getCat(n);if(!c)return null;
   if(uAct==='kg')return{precio:c.km,pesoKg:1,label:'1 kg',emp:0,unit:c.ku};
   if(uAct==='2x500')return{precio:c.km+EMP,pesoKg:1,label:'2×500 gr',emp:EMP,unit:c.ku+EMP};
-  if(uAct==='balde6')return{precio:c.km*6,pesoKg:6,label:'Balde 6 kg (retornable)',emp:0,unit:c.ku*6};
+  if(uAct==='balde6'){
+    const bkg=c.bkg||6, bm=c.bm||(c.km*bkg);
+    return{precio:bm,pesoKg:bkg,label:`Balde ${bkg} kg (retornable)`,emp:0,unit:c.ku*bkg};
+  }
   return{precio:c.gm,pesoKg:.25,label:'250 gr',emp:0,unit:c.gu};
 }
 
-function onOrigenChange(){updHint();updRI();}
+function onOrigenChange(){
+  const n=document.getElementById('origen').value,c=getCat(n);
+  const pillBalde=document.getElementById('pill-balde');
+  if(pillBalde){
+    if(c&&c.bkg){
+      pillBalde.style.display='';
+      pillBalde.textContent='🪣 Balde '+c.bkg+' kg';
+    } else {
+      pillBalde.style.display='none';
+      if(uAct==='balde6'){
+        document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));
+        document.querySelector('[data-u="kg"]').classList.add('active');uAct='kg';
+      }
+    }
+  }
+  updHint();updRI();
+}
 
 function updHint(){
   const n=document.getElementById('origen').value,c=getCat(n),ph=document.getElementById('ph');
@@ -631,7 +657,7 @@ function updHint(){
   const d=uAct==='kg'?desc(c.ku,c.km):uAct==='250g'?desc(c.gu,c.gm):null;
   const dt=d?` <span style="color:#15803d;font-size:9px;">−${d}% vs precio normal</span>`:'';
   if(uAct==='2x500')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} <span style="color:#6d28d9;font-size:9px;">(kg $${c.km.toLocaleString('es-CL')} + $${EMP} empaque)</span>`;
-  else if(uAct==='balde6')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} por balde · <span style="color:#92400e;font-size:9px;">6 kg · precio kg $${c.km.toLocaleString('es-CL')} · retornable</span>`;
+  else if(uAct==='balde6')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} por balde · <span style="color:#92400e;font-size:9px;">${pu.pesoKg} kg · precio kg $${c.km.toLocaleString('es-CL')} · retornable</span>`;
   else ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')}/u · Normal: $${pu.unit.toLocaleString('es-CL')}${dt}`;
 }
 
@@ -814,6 +840,7 @@ function renderCat(){
         <div class="cp-b"><div class="cp-lbl">Mayorista</div><div class="cp-may">$${c.km.toLocaleString('es-CL')}/kg</div><div class="cp-unit">$${c.gm.toLocaleString('es-CL')}/250gr</div></div>
         <div class="cp-b"><div class="cp-lbl">Normal</div><div class="cp-unit">$${c.ku.toLocaleString('es-CL')}/kg</div><div class="cp-unit">$${c.gu.toLocaleString('es-CL')}/250gr</div></div>
         <div class="cp-b" style="align-self:flex-end;"><span class="cp-desc">−${dk}% kg · −${d2}% 250gr</span></div>
+        ${c.bkg?`<div class="cp-b"><div class="cp-lbl">Balde</div><div class="cp-may">$${(c.bm||c.km*c.bkg).toLocaleString('es-CL')}</div><div class="cp-unit">${c.bkg} kg/balde</div></div>`:''}
       </div>
       <span class="cstat ${c.on?'son':'soff'}">${c.on?'✓ Disponible':'Sin stock'}</span>
     </div>`;
@@ -835,8 +862,11 @@ async function addOrigen(){
   const ku=parseInt(document.getElementById('nku').value),gu=parseInt(document.getElementById('n2u').value);
   const perf=document.getElementById('nperf').value.trim(),on=document.getElementById('ndisp').checked;
   if(!n||isNaN(km)||isNaN(gm)||isNaN(ku)||isNaN(gu)){document.getElementById('new-res').innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Completa nombre y los 4 precios.</div></div>';return;}
-  const no={n,p,v,km,gm,ku,gu,perf,on,nuevo:true};cat.push(no);saveCatData();await updateCatSupa(no);
-  ['nn','nv','nperf','nkm','n2m','nku','n2u'].forEach(id=>document.getElementById(id).value='');
+  const bm=parseInt(document.getElementById('nbm').value)||0;
+  const bkg=parseFloat(document.getElementById('nbkg').value)||0;
+  const no={n,p,v,km,gm,ku,gu,perf,on,nuevo:true,...(bm&&bkg?{bm,bkg}:{})};
+  cat.push(no);saveCatData();await updateCatSupa(no);
+  ['nn','nv','nperf','nkm','n2m','nku','n2u','nbm','nbkg'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('new-res').innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div><strong>${n}</strong> agregado en Supabase.</div></div>`;
   fillOrigen();renderCat();setTimeout(()=>document.getElementById('new-res').innerHTML='',3000);
 }
