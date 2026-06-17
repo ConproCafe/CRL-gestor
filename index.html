@@ -135,6 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
+  <div style="font-size:9px;opacity:.4;">v.balde6-fix-3</div>
 </div>
 
 <div class="container">
@@ -433,7 +434,12 @@ function addItem(){
   const q=parseInt(document.getElementById('cantidad').value)||1;
   if(!n){alert('Selecciona un origen.');return;}
   const pu=getPU();
-  items.push({origen:n,formato:f,cantidad:q,unidad:uAct,pesoKg:pu.pesoKg,precioU:pu.precio,emp:pu.emp,totalKg:pu.pesoKg*q,totalP:pu.precio*q,label:pu.label});
+  console.log('[addItem] uAct=',uAct,'pu=',JSON.stringify(pu));
+  // Blindaje: si la presentación activa es balde6, forzar valores correctos sin depender de getPU
+  let pesoKg=pu.pesoKg,precio=pu.precio,label=pu.label,emp=pu.emp;
+  if(uAct==='balde6'){const PB=32150;pesoKg=6;precio=PB*6;label='Balde 6 kg (Etiopía)';emp=0;}
+  items.push({origen:n,formato:f,cantidad:q,unidad:uAct,pesoKg:pesoKg,precioU:precio,emp:emp,totalKg:pesoKg*q,totalP:precio*q,label:label});
+  console.log('[addItem] item guardado=',JSON.stringify(items[items.length-1]));
   document.getElementById('origen').value='';document.getElementById('cantidad').value='1';
   document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));
   document.querySelector('[data-u="kg"]').classList.add('active');uAct='kg';
