@@ -3,17 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CRL — Gestor de Pedidos Mayorista v2</title>
+<title>CRL — Gestor de Pedidos Mayorista</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;background:#f5f4f0;color:#111;min-height:100vh;}
+body{font-family:system-ui,sans-serif;font-size:14px;background:#f9fafb;color:#111;min-height:100vh;}
 .header{background:#111;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
-.header-title{font-size:15px;font-weight:600;letter-spacing:.02em;font-family:'DM Mono',monospace;}
-.header-sub{font-size:11px;opacity:.5;margin-top:2px;}
-.container{max-width:760px;margin:0 auto;padding:16px;}
-.tabs{display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:1.2rem;overflow-x:auto;background:#fff;border-radius:8px 8px 0 0;padding:0 8px;}
-.tab{padding:10px 13px;font-size:12px;font-weight:500;color:#6b7280;cursor:pointer;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;}
+.header-title{font-size:15px;font-weight:600;letter-spacing:.02em;}
+.header-sub{font-size:11px;opacity:.6;margin-top:2px;}
+.container{max-width:720px;margin:0 auto;padding:16px;}
+.tabs{display:flex;border-bottom:1px solid #e5e7eb;margin-bottom:1.2rem;overflow-x:auto;background:#fff;border-radius:8px 8px 0 0;padding:0 8px;}
+.tab{padding:10px 14px;font-size:12px;font-weight:500;color:#6b7280;cursor:pointer;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
 .tab.active{color:#111;border-bottom-color:#111;}
 .panel{display:none;}.panel.active{display:block;}
 .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;}
@@ -23,10 +22,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;background:#f5f4f
 .field-row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
 .field{display:flex;flex-direction:column;gap:3px;}
 .lbl{font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;}
-input,select,textarea{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111;font-family:'DM Sans',sans-serif;}
+input,select,textarea{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111;}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#111;box-shadow:0 0 0 2px rgba(0,0,0,.06);}
 textarea{resize:vertical;min-height:52px;}
-.btn{padding:8px 16px;font-size:12px;font-weight:500;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.btn{padding:8px 16px;font-size:12px;font-weight:500;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111;cursor:pointer;transition:all .15s;}
 .btn:hover{background:#f3f4f6;}
 .btn-primary{background:#111;color:#fff;border-color:#111;}
 .btn-primary:hover{background:#333;}
@@ -35,8 +34,6 @@ textarea{resize:vertical;min-height:52px;}
 .btn-danger:hover{background:#fef2f2;}
 .btn-green{background:#15803d;color:#fff;border-color:#15803d;}
 .btn-green:hover{background:#166534;}
-.btn-wa{background:#25D366;color:#fff;border-color:#25D366;}
-.btn-wa:hover{background:#1da851;}
 .item-row{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#f9fafb;border-radius:6px;margin-bottom:5px;font-size:12px;flex-wrap:wrap;}
 .item-name{flex:1;font-weight:500;min-width:70px;}
 .idet{color:#6b7280;font-size:11px;}
@@ -47,20 +44,17 @@ textarea{resize:vertical;min-height:52px;}
 .badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;}
 .bd-green{background:#dcfce7;color:#15803d;}.bd-gray{background:#f3f4f6;color:#6b7280;}
 .bd-blue{background:#dbeafe;color:#1d4ed8;}.bd-red{background:#fee2e2;color:#b91c1c;}
-.bd-wa{background:#dcfce7;color:#15803d;}.bd-rev{background:#f5f3ff;color:#6d28d9;}
-.bd-orange{background:#ffedd5;color:#c2410c;}
 .alert{border-radius:6px;padding:9px 12px;font-size:12px;margin-bottom:8px;line-height:1.5;display:flex;gap:8px;align-items:flex-start;}
 .al-warn{background:#fef3c7;color:#78350f;border:1px solid #fbbf24;}
 .al-good{background:#f0fdf4;color:#14532d;border:1px solid #86efac;}
 .al-info{background:#eff6ff;color:#1e3a5f;border:1px solid #93c5fd;}
 .al-danger{background:#fef2f2;color:#7f1d1d;border:1px solid #fca5a5;}
-.al-wa{background:#f0fdf4;color:#14532d;border:1px solid #86efac;}
 .al-ic{font-size:13px;flex-shrink:0;margin-top:1px;}
 .sep{height:1px;background:#e5e7eb;margin:12px 0;}
 .krow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
 .kpi{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;}
 .kpi-lb{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
-.kpi-vl{font-size:17px;font-weight:600;color:#111;font-family:'DM Mono',monospace;}
+.kpi-vl{font-size:17px;font-weight:600;color:#111;}
 .kpi-sb{font-size:10px;color:#9ca3af;margin-top:1px;}
 .kpi-com{border-left:3px solid #f59e0b;}.kpi-com-alta{border-left:3px solid #16a34a;}
 .prog-wrap{margin-bottom:14px;}
@@ -72,7 +66,7 @@ textarea{resize:vertical;min-height:52px;}
 .ob-lbl{display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;}
 .ob-track{height:7px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:6px;}
 .ob-fill{height:100%;border-radius:3px;}
-.doc-pre{background:#f8f8f8;border:1px solid #e5e7eb;border-radius:6px;padding:12px;font-size:11px;line-height:1.7;white-space:pre-wrap;font-family:'DM Mono',monospace;max-height:280px;overflow-y:auto;margin-bottom:10px;color:#222;}
+.doc-pre{background:#f8f8f8;border:1px solid #e5e7eb;border-radius:6px;padding:12px;font-size:11px;line-height:1.7;white-space:pre-wrap;font-family:monospace;max-height:280px;overflow-y:auto;margin-bottom:10px;color:#222;}
 .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(0,0,0,.15);border-top-color:#111;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:5px;}
 @keyframes sp{to{transform:rotate(360deg);}}
 .ph{font-size:10px;color:#9ca3af;margin-top:2px;min-height:14px;}
@@ -116,7 +110,6 @@ textarea{resize:vertical;min-height:52px;}
 .pt-mixt{background:#fef3c7;color:#78350f;}
 .mbar{height:3px;background:#e5e7eb;border-radius:2px;overflow:hidden;margin-top:7px;}
 .mbar-f{height:100%;border-radius:2px;}
-/* modal */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:flex;align-items:center;justify-content:center;padding:14px;}
 .modal{background:#fff;border-radius:10px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;padding:18px;}
 .mhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
@@ -124,71 +117,21 @@ textarea{resize:vertical;min-height:52px;}
 .mclose{background:transparent;border:none;font-size:19px;cursor:pointer;color:#6b7280;}
 .srow3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
 .st{background:#f9fafb;border-radius:6px;padding:9px 10px;text-align:center;}
-.stv{font-size:17px;font-weight:500;font-family:'DM Mono',monospace;}.stl{font-size:10px;color:#6b7280;margin-top:1px;}
+.stv{font-size:17px;font-weight:500;}.stl{font-size:10px;color:#6b7280;margin-top:1px;}
 .oc{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;margin:2px;color:#fff;font-weight:500;}
 .fc{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;margin:2px;background:#f3f4f6;color:#6b7280;}
 .pbox{border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.5;background:#f9fafb;}
 .hi{font-size:11px;color:#6b7280;padding:5px 0;border-bottom:1px solid #e5e7eb;}
 .hi:last-child{border-bottom:none;}
 .empty{text-align:center;padding:2rem;color:#9ca3af;font-size:13px;}
-
-/* ── CICLO SEMANAL ── */
-.ciclo-bar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px;}
-.ciclo-day{border-radius:6px;padding:7px 4px;text-align:center;font-size:10px;font-weight:500;}
-.ciclo-day .day-name{font-size:9px;color:#9ca3af;margin-bottom:2px;text-transform:uppercase;}
-.ciclo-day .day-ico{font-size:14px;margin-bottom:2px;}
-.ciclo-day .day-lbl{font-size:9px;}
-.cd-open{background:#dcfce7;color:#15803d;}
-.cd-close{background:#fef3c7;color:#78350f;}
-.cd-entrega{background:#dbeafe;color:#1d4ed8;}
-.cd-off{background:#f3f4f6;color:#9ca3af;}
-.cd-hoy{outline:2px solid #111;outline-offset:1px;}
-
-/* ── REVENDEDORES ── */
-.rev-card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:13px;margin-bottom:8px;}
-.rev-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.rev-name{font-size:13px;font-weight:600;}
-.rev-meta{font-size:11px;color:#6b7280;}
-.rev-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
-.rev-stat{background:#f9fafb;border-radius:5px;padding:7px;text-align:center;}
-.rev-stat-v{font-size:14px;font-weight:600;font-family:'DM Mono',monospace;}
-.rev-stat-l{font-size:9px;color:#9ca3af;margin-top:1px;}
-
-/* ── ESTADOS DE PEDIDO ── */
-.estado-pills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;}
-.epill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;cursor:pointer;border:1px solid transparent;}
-.ep-pendiente{background:#fef3c7;color:#78350f;border-color:#fbbf24;}
-.ep-confirmado{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}
-.ep-pagado{background:#f5f3ff;color:#6d28d9;border-color:#c4b5fd;}
-.ep-entregado{background:#dcfce7;color:#15803d;border-color:#86efac;}
-.ep-sel{outline:2px solid #111;outline-offset:1px;}
-
-/* ── WA TEXTOS ── */
-.wa-block{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:13px;margin-bottom:10px;}
-.wa-title{font-size:11px;font-weight:600;color:#15803d;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
-.wa-pre{font-size:11px;line-height:1.6;white-space:pre-wrap;color:#111;background:#fff;border-radius:5px;padding:10px;border:1px solid #d1d5db;font-family:'DM Mono',monospace;max-height:160px;overflow-y:auto;}
-.wa-copy{font-size:10px;padding:3px 9px;border-radius:4px;background:#25D366;color:#fff;border:none;cursor:pointer;}
-.wa-copy:hover{background:#1da851;}
-
-/* ── CATÁLOGO VISUAL ── */
-.cat-visual{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px;}
-.cv-card{border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;}
-.cv-header{padding:10px 12px;color:#fff;font-size:12px;font-weight:600;}
-.cv-body{padding:10px 12px;}
-.cv-perf{font-size:10px;color:#6b7280;font-style:italic;margin-bottom:8px;line-height:1.4;}
-.cv-price{display:flex;justify-content:space-between;align-items:flex-end;}
-.cv-may{font-size:15px;font-weight:700;font-family:'DM Mono',monospace;}
-.cv-norm{font-size:10px;color:#9ca3af;text-decoration:line-through;}
-.cv-desc-badge{font-size:9px;background:#dcfce7;color:#15803d;border-radius:3px;padding:2px 6px;font-weight:600;}
-
-@media(max-width:600px){.cg,.clgrid,.cat-visual,.field-row,.field-row3,.field-row4,.ciclo-bar{grid-template-columns:1fr 1fr;}.krow{grid-template-columns:1fr 1fr;}.ciclo-bar{grid-template-columns:repeat(7,1fr);}}
+@media(max-width:600px){.cg,.clgrid,.field-row,.field-row3,.field-row4{grid-template-columns:1fr;}.krow{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div>
-    <div class="header-title">☕ CRL — Gestor de Pedidos v2</div>
+    <div class="header-title">☕ CRL — Gestor de Pedidos</div>
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
@@ -197,74 +140,37 @@ textarea{resize:vertical;min-height:52px;}
 <div class="container">
 <div class="tabs">
   <button class="tab active" onclick="showTab('nuevo',this)">Nuevo pedido</button>
-  <button class="tab" onclick="showTab('semana',this)">Semana</button>
   <button class="tab" onclick="showTab('mes',this)">Mes actual</button>
-  <button class="tab" onclick="showTab('revendedores',this)">Revendedores</button>
-  <button class="tab" onclick="showTab('wa',this)">Textos WA</button>
   <button class="tab" onclick="showTab('catalogo',this)">Catálogo</button>
   <button class="tab" onclick="showTab('clientes',this)">Clientes</button>
   <button class="tab" onclick="showTab('historial',this)">Historial</button>
 </div>
 
-<!-- ══ NUEVO PEDIDO ══ -->
+<!-- NUEVO PEDIDO -->
 <div id="panel-nuevo" class="panel active">
 <div class="card">
   <div class="section-title">Datos del pedido</div>
-
-  <!-- Ciclo semanal mini -->
-  <div id="ciclo-mini" style="margin-bottom:12px;"></div>
-
   <div class="field-row">
     <div class="field"><div class="lbl">Canal</div>
       <select id="canal" onchange="onCanalChange()">
         <option value="comunidad">Comunidad WhatsApp</option>
-        <option value="revendedor">Revendedor</option>
         <option value="cafeteria">Cafetería (B2B)</option>
       </select>
     </div>
     <div class="field"><div class="lbl">Fecha</div><input type="date" id="fecha"/></div>
   </div>
-
   <div id="campo-com">
     <div class="field" style="margin-bottom:8px;">
-      <div class="lbl">Nombre cliente</div>
+      <div class="lbl">Nombre cliente <span style="font-weight:400;text-transform:none;font-size:9px;">(registro interno — no aparece en OC)</span></div>
       <input type="text" id="cliente" placeholder="Ej: Bárbara Yañez"/>
     </div>
   </div>
-
-  <div id="campo-rev" style="display:none;">
-    <div class="field-row">
-      <div class="field"><div class="lbl">Revendedor</div>
-        <select id="rev-sel" onchange="onRevChange()"><option value="">Seleccionar...</option></select>
-      </div>
-      <div class="field"><div class="lbl">Cliente final (del revendedor)</div>
-        <input type="text" id="rev-cliente" placeholder="Opcional"/>
-      </div>
-    </div>
-    <div id="rev-info" style="margin-bottom:8px;"></div>
-  </div>
-
   <div id="campo-caf" style="display:none;">
     <div class="field-row">
       <div class="field"><div class="lbl">Cafetería</div>
         <select id="cafe-nombre"><option value="Prensa">Prensa — Providencia</option><option value="Otra">Otra</option></select>
       </div>
       <div class="field"><div class="lbl">Contacto</div><input type="text" id="cafe-contacto" placeholder="Ej: María Edwards"/></div>
-    </div>
-    <div class="field" style="margin-bottom:8px;">
-      <div class="lbl">Kg reales del pedido <span style="font-weight:400;font-size:9px;text-transform:none;">(ej: balde 6 kg — sobreescribe el cálculo automático)</span></div>
-      <input type="number" id="cafe-kg-reales" placeholder="Dejar vacío para usar kg calculados" min="0" step="0.25"/>
-    </div>
-  </div>
-
-  <!-- Estado del pedido -->
-  <div class="field" style="margin-bottom:0;">
-    <div class="lbl">Estado</div>
-    <div class="estado-pills" style="margin-top:4px;">
-      <span class="epill ep-pendiente ep-sel" data-e="pendiente" onclick="selEstado(this)">⏳ Pendiente</span>
-      <span class="epill ep-confirmado" data-e="confirmado" onclick="selEstado(this)">✓ Confirmado</span>
-      <span class="epill ep-pagado" data-e="pagado" onclick="selEstado(this)">💳 Pagado</span>
-      <span class="epill ep-entregado" data-e="entregado" onclick="selEstado(this)">📦 Entregado</span>
     </div>
   </div>
 </div>
@@ -291,6 +197,7 @@ textarea{resize:vertical;min-height:52px;}
       <button class="upill active" data-u="kg" onclick="selU(this)">1 kg</button>
       <button class="upill upill-p" data-u="2x500" onclick="selU(this)">2×500 gr <span style="font-size:9px;opacity:.8;">+$700</span></button>
       <button class="upill" data-u="250g" onclick="selU(this)">250 gr</button>
+      <button class="upill" data-u="balde6" onclick="selU(this)">Balde 6 kg <span style="font-size:9px;opacity:.8;">Etiopía</span></button>
     </div>
     <div class="ph" id="ph"></div>
   </div>
@@ -316,7 +223,6 @@ textarea{resize:vertical;min-height:52px;}
   <div style="display:flex;gap:7px;flex-wrap:wrap;">
     <button class="btn btn-primary" onclick="savePedido()">Guardar pedido</button>
     <button class="btn btn-green" onclick="previewDoc()">Ver orden de compra</button>
-    <button class="btn btn-wa" onclick="genMsgConfirmacion()">📱 Generar mensaje WA</button>
     <button class="btn" onclick="limpiar()">Limpiar</button>
   </div>
 </div>
@@ -333,35 +239,9 @@ textarea{resize:vertical;min-height:52px;}
   <div id="drive-res" style="margin-top:8px;"></div>
 </div>
 </div>
-
-<div id="wa-msg-sec" style="display:none;">
-<div class="card">
-  <div class="section-title">📱 Mensaje WhatsApp generado</div>
-  <div class="wa-block">
-    <div class="wa-title">Mensaje de confirmación <button class="wa-copy" onclick="copyWA('wa-msg-pre')">Copiar</button></div>
-    <div class="wa-pre" id="wa-msg-pre"></div>
-  </div>
-</div>
-</div>
 </div>
 
-<!-- ══ SEMANA ══ -->
-<div id="panel-semana" class="panel">
-<div class="card">
-  <div class="section-title">Ciclo de pedidos semanal</div>
-  <div id="ciclo-grande"></div>
-  <div id="semana-estado" style="margin-top:10px;"></div>
-</div>
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-    <div class="section-title" style="margin:0;">Pedidos de la semana</div>
-    <div id="semana-kpis" style="display:flex;gap:8px;"></div>
-  </div>
-  <div id="semana-lista"></div>
-</div>
-</div>
-
-<!-- ══ MES ACTUAL ══ -->
+<!-- MES ACTUAL -->
 <div id="panel-mes" class="panel">
 <div class="card">
   <div class="krow" id="kpi-mes"></div>
@@ -376,168 +256,7 @@ textarea{resize:vertical;min-height:52px;}
 <div id="rep-res" style="margin-top:8px;"></div>
 </div>
 
-<!-- ══ REVENDEDORES ══ -->
-<div id="panel-revendedores" class="panel">
-<div class="card">
-  <div class="krow" id="rev-kpi" style="margin-bottom:0;"></div>
-</div>
-<div id="rev-lista"></div>
-<div class="card">
-  <div class="section-title">➕ Agregar revendedor</div>
-  <div class="field-row3">
-    <div class="field"><div class="lbl">Nombre</div><input type="text" id="rn-nombre" placeholder="Ej: Carmen Vidal"/></div>
-    <div class="field"><div class="lbl">WhatsApp</div><input type="text" id="rn-wa" placeholder="+56 9 XXXX XXXX"/></div>
-    <div class="field"><div class="lbl">Comunidad / Grupo</div><input type="text" id="rn-grupo" placeholder="Ej: 4° básico A"/></div>
-  </div>
-  <div class="field-row">
-    <div class="field"><div class="lbl">Descuento (%)</div><input type="number" id="rn-desc" value="10" min="0" max="30"/></div>
-    <div class="field"><div class="lbl">Pedido mínimo (kg)</div><input type="number" id="rn-min" value="9" min="3"/></div>
-  </div>
-  <div class="field" style="margin-bottom:10px;"><div class="lbl">Notas</div><textarea id="rn-notas" placeholder="Ej: Retira los viernes al mediodía..."></textarea></div>
-  <button class="btn btn-primary" onclick="addRevendedor()">Agregar revendedor</button>
-  <div id="rev-res" style="margin-top:8px;"></div>
-</div>
-</div>
-
-<!-- ══ TEXTOS WA ══ -->
-<div id="panel-wa" class="panel">
-<div class="card">
-  <div class="section-title">📱 Textos para WhatsApp Business</div>
-  <div class="alert al-info" style="margin-bottom:14px;"><div class="al-ic">ℹ</div><div>Copia cada texto directamente a WhatsApp Business. Los campos entre [corchetes] reemplázalos con tus datos.</div></div>
-
-  <div class="wa-block">
-    <div class="wa-title">1. Mensaje de Bienvenida (automático — primer contacto) <button class="wa-copy" onclick="copyWA('wat-1')">Copiar</button></div>
-    <div class="wa-pre" id="wat-1">¡Hola! ☕ Bienvenido/a a CRL Coffee Roasting Labs.
-
-Aquí encontrarás café de especialidad con retiro directo, sin intermediarios.
-
-📋 *¿Cómo funciona?*
-• Pedidos abiertos: *lunes a miércoles hasta las 20h*
-• Mínimo de compra: *3 Kg*
-• Retiro: *viernes en [tu edificio/dirección referencial]*
-• Pago: *transferencia antes del retiro*
-
-Para ver nuestras variedades y precios, revisa el 👉 *Catálogo* en este chat.
-
-¡Cualquier consulta con gusto te ayudo! 😊</div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">2. Mensaje de Ausencia (fines de semana y fuera de horario) <button class="wa-copy" onclick="copyWA('wat-2')">Copiar</button></div>
-    <div class="wa-pre" id="wat-2">¡Hola! 👋 En este momento no estoy disponible.
-
-📅 Atiendo consultas de *lunes a miércoles*.
-🛒 Pedidos se reciben hasta el *miércoles a las 20h*.
-📦 Entregas cada *viernes*.
-
-Te responderé a la brevedad en el próximo horario disponible. ¡Gracias por escribir! ☕</div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">3. Respuesta rápida /precio <button class="wa-copy" onclick="copyWA('wat-3')">Copiar</button></div>
-    <div class="wa-pre" id="wat-3" style="max-height:none;"></div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">4. Respuesta rápida /retiro <button class="wa-copy" onclick="copyWA('wat-4')">Copiar</button></div>
-    <div class="wa-pre" id="wat-4">📦 *¿Cómo retirar tu pedido?*
-
-• Retiros cada *viernes*
-• Lugar: *[Nombre edificio / dirección referencial]*
-• Horario de retiro: *[ej: 18h a 20h]*
-• El pago debe estar hecho *antes de retirar* (transferencia)
-
-Te aviso por este chat cuando tu pedido esté listo 👍</div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">5. Respuesta rápida /pago <button class="wa-copy" onclick="copyWA('wat-5')">Copiar</button></div>
-    <div class="wa-pre" id="wat-5">💳 *Datos para transferencia:*
-
-• Banco: [Tu banco]
-• Tipo de cuenta: [Corriente / Vista / RUT]
-• Número: [Tu número de cuenta]
-• RUT: [Tu RUT]
-• Nombre: [Tu nombre]
-• Email: [Tu email]
-
-Envíame el comprobante por este chat y queda confirmado tu pedido ✅</div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">6. Respuesta rápida /pedido <button class="wa-copy" onclick="copyWA('wat-6')">Copiar</button></div>
-    <div class="wa-pre" id="wat-6">🛒 *Para hacer tu pedido necesito:*
-
-1. Tu nombre completo
-2. Variedad(es) de café
-3. Cantidad en Kg (mínimo 3 Kg)
-4. Molienda: Grano / Espresso / Italiana / Francesa / Filtrado
-
-Pedidos cierran el *miércoles a las 20h*, retiro el *viernes*.
-
-¡Escríbeme y te confirmo disponibilidad! ☕</div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">7. Respuesta rápida /cierre <button class="wa-copy" onclick="copyWA('wat-7')">Copiar</button></div>
-    <div class="wa-pre" id="wat-7">⏰ *¡Pedidos cerrados por esta semana!*
-
-Si ya hiciste tu pedido, te confirmo el *jueves* con los datos de pago.
-
-La próxima ventana de pedidos abre el *lunes*. ¡No te la pierdas! ☕
-
-Gracias por tu preferencia 🙏</div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">8. Respuesta rápida /revendedor <button class="wa-copy" onclick="copyWA('wat-8')">Copiar</button></div>
-    <div class="wa-pre" id="wat-8">🤝 *¿Quieres ser revendedor?*
-
-Si tienes un grupo de amigos, compañeros o apoderados interesados en café de calidad, podemos trabajar juntos.
-
-*Beneficios:*
-• Descuento exclusivo por volumen
-• Tú organizas tu grupo, yo te entrego todo junto
-• Sin costo de inscripción
-
-Escríbeme y conversamos los detalles 😊</div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">9. Mensaje de cierre de pedidos (envío masivo — miércoles 20h) <button class="wa-copy" onclick="copyWA('wat-9')">Copiar</button></div>
-    <div class="wa-pre" id="wat-9">☕ *¡Pedidos CRL cerrados por esta semana!*
-
-📦 Si pediste, te confirmo mañana jueves con el resumen y datos de pago.
-📅 Próxima apertura: *lunes*.
-
-¡Gracias a todos! Ya preparando el café con amor 💚</div>
-  </div>
-
-  <div class="wa-block">
-    <div class="wa-title">10. Mensaje apertura de pedidos (envío masivo — lunes) <button class="wa-copy" onclick="copyWA('wat-10')">Copiar</button></div>
-    <div class="wa-pre" id="wat-10">☕ *¡Abrimos pedidos esta semana!*
-
-📅 Puedes pedir hasta el *miércoles a las 20h*
-📦 Retiro: *viernes*
-🛒 Mínimo: *3 Kg*
-
-Variedades disponibles esta semana 👇</div>
-  </div>
-</div>
-
-<!-- Catálogo visual -->
-<div class="card">
-  <div class="section-title">🗂️ Catálogo visual (para compartir en WA)</div>
-  <div class="alert al-info" style="margin-bottom:12px;"><div class="al-ic">📋</div><div>Pega este listado debajo del mensaje de apertura para mostrar las variedades disponibles.</div></div>
-  <button class="btn btn-primary" onclick="genCatWA()" style="margin-bottom:10px;">Generar catálogo WhatsApp</button>
-  <div id="cat-wa-out" style="display:none;" class="wa-block">
-    <div class="wa-title">Catálogo disponible <button class="wa-copy" onclick="copyWA('cat-wa-txt')">Copiar</button></div>
-    <div class="wa-pre" id="cat-wa-txt"></div>
-  </div>
-</div>
-</div>
-
-<!-- ══ CATÁLOGO ══ -->
+<!-- CATÁLOGO -->
 <div id="panel-catalogo" class="panel">
 <div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -574,7 +293,7 @@ Variedades disponibles esta semana 👇</div>
 </div>
 </div>
 
-<!-- ══ CLIENTES ══ -->
+<!-- CLIENTES -->
 <div id="panel-clientes" class="panel">
 <div class="card">
   <div class="krow" id="cl-kpi" style="grid-template-columns:repeat(3,1fr);margin-bottom:0;"></div>
@@ -583,7 +302,7 @@ Variedades disponibles esta semana 👇</div>
 <div id="cl-grid" class="clgrid"></div>
 </div>
 
-<!-- ══ HISTORIAL ══ -->
+<!-- HISTORIAL -->
 <div id="panel-historial" class="panel">
   <div id="hist-content"></div>
 </div>
@@ -602,9 +321,10 @@ Variedades disponibles esta semana 👇</div>
 
 <script>
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
-const SK='crl_pedidos_wsp_v2', CK='crl_catalogo_wsp', RK='crl_revendedores';
+const SK='crl_pedidos_wsp', CK='crl_catalogo_wsp';
 const CU=25, CB=1500, CA=2000, EMP=700;
 
+// Catálogo base actualizado desde planilla Drive (mayo 2026)
 const CAT_BASE=[
   {n:'Roma',p:'Natural',v:'80% Arábica (Catuai) / 20% Robusta',km:25300,gm:9300,ku:34000,gu:11000,perf:'Panela, chocolate, caramelo. Ideal espresso o latte.',on:true},
   {n:'Brasil',p:'Natural',v:'100% Arábica (Catuai Amarillo)',km:26300,gm:10300,ku:36000,gu:12000,perf:'Chocolate, miel, caramelo. Cuerpo cremoso.',on:true},
@@ -625,81 +345,31 @@ const COLORS={Roma:'#3266ad',Brasil:'#e8823a',Colombia:'#a14fae','Pink Bourbon':
 const OTIPO={Roma:'clasico',Brasil:'clasico',Perú:'accesible',Colombia:'versatil',Bolivia:'accesible',Etiopía:'especialidad',Ruanda:'especialidad',Guatemala:'especialidad','Pink Bourbon':'especialidad',Geisha:'especialidad','Caturra-Chiroso':'especialidad','Decaf Colombia':'versatil',Honduras:'accesible'};
 const FTIPO={'Grano':'exp','Filtrado':'exp','Francesa':'exp','Espresso':'clas','Italiana':'clas'};
 
-const DIAS_NOMBRES=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-
-let pedidos=[], cat=[], items=[], revendedores=[], uAct='kg', estadoAct='pendiente';
+let pedidos=[], cat=[], items=[], uAct='kg';
 const MES_ACTUAL=new Date().toISOString().slice(0,7);
 
+// Storage local (localStorage fallback para standalone)
 function storageGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
 function storageSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
 function load(){
-  // Migrar pedidos anteriores si existen
-  const old=storageGet('crl_pedidos_wsp')||[];
-  const nuevo=storageGet(SK)||[];
-  // Combinar sin duplicados por id
-  const ids=new Set(nuevo.map(p=>p.id));
-  pedidos=[...nuevo,...old.filter(p=>!ids.has(p.id))];
+  pedidos=storageGet(SK)||[];
   cat=storageGet(CK)||JSON.parse(JSON.stringify(CAT_BASE));
-  revendedores=storageGet(RK)||[];
 }
 function savePeds(){storageSet(SK,pedidos);}
 function saveCatData(){storageSet(CK,cat);}
-function saveRevs(){storageSet(RK,revendedores);}
 
 function hoy(){return new Date().toISOString().split('T')[0];}
 function getCat(n){return cat.find(c=>c.n===n);}
 function desc(unit,may){return Math.round((1-may/unit)*100);}
 
-// ── CICLO SEMANAL ─────────────────────────────────────────────────────────────
-function getCicloInfo(fecha){
-  const d=fecha?new Date(fecha+'T12:00:00'):new Date();
-  const dow=d.getDay(); // 0=dom,1=lun,...,6=sab
-  // Lun=1,Mar=2,Mié=3 → pedidos abiertos
-  // Jue=4 → confirmaciones
-  // Vie=5 → entrega
-  // Sáb=6,Dom=0 → cerrado
-  if(dow>=1&&dow<=3)return{estado:'abierto',msg:'🟢 Pedidos abiertos hasta el miércoles a las 20h',color:'#15803d'};
-  if(dow===4)return{estado:'confirmacion',msg:'🔵 Hoy jueves: día de confirmaciones y cobros',color:'#1d4ed8'};
-  if(dow===5)return{estado:'entrega',msg:'📦 Hoy viernes: día de entrega',color:'#1d4ed8'};
-  return{estado:'cerrado',msg:'🔴 Canal cerrado. Reabre el lunes.',color:'#b91c1c'};
-}
-
-function renderCiclo(containerId, compact=false){
-  const hoyDow=new Date().getDay();
-  const dias=[
-    {d:'Lun',dow:1,tipo:'open',ico:'🛒',lbl:'Pedidos'},
-    {d:'Mar',dow:2,tipo:'open',ico:'🛒',lbl:'Pedidos'},
-    {d:'Mié',dow:3,tipo:'close',ico:'⏰',lbl:'Cierre 20h'},
-    {d:'Jue',dow:4,tipo:'conf',ico:'✓',lbl:'Confirmación'},
-    {d:'Vie',dow:5,tipo:'entrega',ico:'📦',lbl:'Entrega'},
-    {d:'Sáb',dow:6,tipo:'off',ico:'—',lbl:'Cerrado'},
-    {d:'Dom',dow:0,tipo:'off',ico:'—',lbl:'Cerrado'},
-  ];
-  const clases={open:'cd-open',close:'cd-close',conf:'cd-open',entrega:'cd-entrega',off:'cd-off'};
-  const el=document.getElementById(containerId);
-  if(!el)return;
-  el.innerHTML=`<div class="ciclo-bar">`+dias.map(d=>`
-    <div class="ciclo-day ${clases[d.tipo]} ${d.dow===hoyDow?'cd-hoy':''}">
-      <div class="day-name">${d.d}</div>
-      <div class="day-ico">${d.ico}</div>
-      ${!compact?`<div class="day-lbl">${d.lbl}</div>`:''}
-    </div>`).join('')+`</div>`;
-}
-
-// ── TABS ──────────────────────────────────────────────────────────────────────
 function showTab(t,el){
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
   el.classList.add('active');document.getElementById('panel-'+t).classList.add('active');
-  if(t==='mes')renderMes();
-  if(t==='historial')renderHist();
-  if(t==='clientes')renderClientes();
-  if(t==='catalogo')renderCat();
-  if(t==='nuevo'){fillOrigen();fillRevSel();renderCiclo('ciclo-mini',true);}
-  if(t==='semana')renderSemana();
-  if(t==='revendedores')renderRevendedores();
-  if(t==='wa')renderWATextos();
+  if(t==='mes')renderMes();if(t==='historial')renderHist();
+  if(t==='clientes')renderClientes();if(t==='catalogo')renderCat();
+  if(t==='nuevo')fillOrigen();
 }
 
 function fillOrigen(){
@@ -711,51 +381,25 @@ function fillOrigen(){
   if(val)sel.value=val;
 }
 
-function fillRevSel(){
-  const sel=document.getElementById('rev-sel');
-  sel.innerHTML='<option value="">Seleccionar...</option>';
-  revendedores.forEach((r,i)=>{const o=document.createElement('option');o.value=i;o.textContent=r.nombre+(r.grupo?' ('+r.grupo+')':'');sel.appendChild(o);});
-}
-
-function onRevChange(){
-  const idx=document.getElementById('rev-sel').value;
-  const el=document.getElementById('rev-info');
-  if(idx===''){el.innerHTML='';return;}
-  const r=revendedores[idx];
-  el.innerHTML=`<div class="alert al-info"><div class="al-ic">🤝</div><div>Revendedor: <strong>${r.nombre}</strong> · Descuento: <strong>${r.descuento}%</strong> · Mínimo: <strong>${r.minKg} kg</strong>${r.grupo?' · Grupo: '+r.grupo:''}</div></div>`;
-}
-
 function onCanalChange(){
   const v=document.getElementById('canal').value;
   document.getElementById('campo-com').style.display=v==='comunidad'?'block':'none';
-  document.getElementById('campo-rev').style.display=v==='revendedor'?'block':'none';
   document.getElementById('campo-caf').style.display=v==='cafeteria'?'block':'none';
-}
-
-function selEstado(el){
-  document.querySelectorAll('.epill').forEach(p=>p.classList.remove('ep-sel'));
-  el.classList.add('ep-sel');estadoAct=el.dataset.e;
 }
 
 function selU(el){
   document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));el.classList.add('active');uAct=el.dataset.u;
   const lb=document.getElementById('cant-lbl');
-  lb.textContent=uAct==='kg'?'(nº de kilos)':uAct==='2x500'?'(nº de paquetes dobles)':'(nº de fracciones 250gr)';
+  lb.textContent=uAct==='kg'?'(nº de kilos)':uAct==='2x500'?'(nº de paquetes dobles)':uAct==='balde6'?'(nº de baldes de 6 kg)':'(nº de fracciones 250gr)';
   updHint();updRI();
 }
 
-function getPU(revDesc=0){
+function getPU(){
   const n=document.getElementById('origen').value,c=getCat(n);if(!c)return null;
-  const mult=(1-revDesc/100);
-  if(uAct==='kg')return{precio:Math.round(c.km*mult),pesoKg:1,label:'1 kg',emp:0,unit:c.ku};
-  if(uAct==='2x500')return{precio:Math.round((c.km+EMP)*mult),pesoKg:1,label:'2×500 gr',emp:EMP,unit:c.ku+EMP};
-  return{precio:Math.round(c.gm*mult),pesoKg:.25,label:'250 gr',emp:0,unit:c.gu};
-}
-
-function getRevDesc(){
-  if(document.getElementById('canal').value!=='revendedor')return 0;
-  const idx=document.getElementById('rev-sel').value;
-  return idx!==''?revendedores[idx].descuento:0;
+  if(uAct==='kg')return{precio:c.km,pesoKg:1,label:'1 kg',emp:0,unit:c.ku};
+  if(uAct==='2x500')return{precio:c.km+EMP,pesoKg:1,label:'2×500 gr',emp:EMP,unit:c.ku+EMP};
+  if(uAct==='balde6'){const PB=32150;return{precio:PB*6,pesoKg:6,label:'Balde 6 kg',emp:0,unit:PB*6,precioKg:PB};}
+  return{precio:c.gm,pesoKg:.25,label:'250 gr',emp:0,unit:c.gu};
 }
 
 function onOrigenChange(){updHint();updRI();}
@@ -763,10 +407,11 @@ function onOrigenChange(){updHint();updRI();}
 function updHint(){
   const n=document.getElementById('origen').value,c=getCat(n),ph=document.getElementById('ph');
   if(!c){ph.innerHTML='';return;}
-  const pu=getPU(getRevDesc());if(!pu){ph.innerHTML='';return;}
+  const pu=getPU();if(!pu){ph.innerHTML='';return;}
   const d=uAct==='kg'?desc(c.ku,c.km):uAct==='250g'?desc(c.gu,c.gm):null;
   const dt=d?` <span style="color:#15803d;font-size:9px;">−${d}% vs precio normal</span>`:'';
-  if(uAct==='2x500')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} <span style="color:#6d28d9;font-size:9px;">(kg $${c.km.toLocaleString('es-CL')} + $${EMP} empaque)</span>`;
+  if(uAct==='balde6')ph.innerHTML=`$192.900 total · $32.150/kg × 6 kg <span style="color:#15803d;font-size:9px;">−2% vs precio unitario</span>`;
+  else if(uAct==='2x500')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} <span style="color:#6d28d9;font-size:9px;">(kg $${c.km.toLocaleString('es-CL')} + $${EMP} empaque)</span>`;
   else ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')}/u · Normal: $${pu.unit.toLocaleString('es-CL')}${dt}`;
 }
 
@@ -776,11 +421,10 @@ function updRI(){
   const n=document.getElementById('origen').value,q=parseInt(document.getElementById('cantidad').value)||1;
   const el=document.getElementById('ri'),tx=document.getElementById('ri-txt');
   if(!n){el.style.display='none';return;}
-  const pu=getPU(getRevDesc());if(!pu){el.style.display='none';return;}
+  const pu=getPU();if(!pu){el.style.display='none';return;}
   const tp=pu.precio*q,tk=pu.pesoKg*q;
   let ex=uAct==='2x500'?` <span style="color:#6d28d9;font-size:10px;">(incl. $${(EMP*q).toLocaleString('es-CL')} empaque)</span>`:'';
-  const rd=getRevDesc();const rdTxt=rd?` <span style="color:#6d28d9;font-size:10px;">−${rd}% revendedor</span>`:'';
-  tx.innerHTML=`<strong>${q}× ${pu.label} de ${n}</strong> · <strong>${tk.toFixed(2)} kg</strong> · <strong>$${tp.toLocaleString('es-CL')}</strong>${ex}${rdTxt}`;
+  tx.innerHTML=`<strong>${q}× ${pu.label} de ${n}</strong> · <strong>${tk.toFixed(2)} kg</strong> · <strong>$${tp.toLocaleString('es-CL')}</strong>${ex}`;
   el.style.display='flex';
 }
 
@@ -788,8 +432,8 @@ function addItem(){
   const n=document.getElementById('origen').value,f=document.getElementById('formato').value;
   const q=parseInt(document.getElementById('cantidad').value)||1;
   if(!n){alert('Selecciona un origen.');return;}
-  const rd=getRevDesc(),pu=getPU(rd);
-  items.push({origen:n,formato:f,cantidad:q,unidad:uAct,pesoKg:pu.pesoKg,precioU:pu.precio,emp:pu.emp,totalKg:pu.pesoKg*q,totalP:pu.precio*q,label:pu.label,revDesc:rd});
+  const pu=getPU();
+  items.push({origen:n,formato:f,cantidad:q,unidad:uAct,pesoKg:pu.pesoKg,precioU:pu.precio,emp:pu.emp,totalKg:pu.pesoKg*q,totalP:pu.precio*q,label:pu.label});
   document.getElementById('origen').value='';document.getElementById('cantidad').value='1';
   document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));
   document.querySelector('[data-u="kg"]').classList.add('active');uAct='kg';
@@ -806,17 +450,16 @@ function renderItems(){
     <div class="idet">${it.cantidad}× ${it.label}</div>
     <div class="idet">${it.formato}</div>
     <div class="idet">${it.totalKg.toFixed(2)} kg</div>
-    <div class="idet" style="font-weight:500;">$${it.totalP.toLocaleString('es-CL')}${it.emp?` <span style="font-size:9px;color:#6d28d9">(+$${(it.emp*it.cantidad).toLocaleString('es-CL')})</span>`:''}${it.revDesc?` <span style="font-size:9px;color:#6d28d9">−${it.revDesc}%</span>`:''}</div>
+    <div class="idet" style="font-weight:500;">$${it.totalP.toLocaleString('es-CL')}${it.emp?` <span style="font-size:9px;color:#6d28d9">(+$${(it.emp*it.cantidad).toLocaleString('es-CL')})</span>`:''}</div>
     <button class="btn btn-sm btn-danger" onclick="rmItem(${i})">×</button>
   </div>`).join('');
   const canal=document.getElementById('canal').value,del=canal==='cafeteria'?3500:0;
   const sub=items.reduce((s,i)=>s+i.totalP,0),tkg=items.reduce((s,i)=>s+i.totalKg,0);
   const temp=items.reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
-  const minOk=tkg>=3;
   document.getElementById('items-wrap').style.display='block';
   document.getElementById('res-content').innerHTML=`
-    <div class="srow"><span class="slb">Canal</span><span class="svl">${canal==='comunidad'?'Comunidad WhatsApp':canal==='revendedor'?'Revendedor':'Cafetería B2B'}</span></div>
-    <div class="srow"><span class="slb">Total kg</span><span class="svl">${tkg.toFixed(2)} kg ${!minOk?'<span style="color:#dc2626;font-size:10px;">⚠ mín. 3 kg</span>':''}</span></div>
+    <div class="srow"><span class="slb">Canal</span><span class="svl">${canal==='comunidad'?'Comunidad WhatsApp':'Cafetería B2B'}</span></div>
+    <div class="srow"><span class="slb">Total kg</span><span class="svl">${tkg.toFixed(2)} kg</span></div>
     <div class="srow"><span class="slb">Subtotal café</span><span class="svl">$${sub.toLocaleString('es-CL')}</span></div>
     ${temp?`<div class="srow"><span class="slb" style="color:#6d28d9;">↳ empaque doble</span><span class="svl" style="color:#6d28d9;">$${temp.toLocaleString('es-CL')}</span></div>`:''}
     ${del?`<div class="srow"><span class="slb">Delivery</span><span class="svl">$3.500</span></div>`:''}
@@ -824,104 +467,59 @@ function renderItems(){
 }
 function rmItem(i){items.splice(i,1);renderItems();}
 
-function getKgPed(p){return p.kgReales||p.items.reduce((a,i)=>a+i.totalKg,0);}
-function getKgMes(m){return pedidos.filter(p=>p.mes===m).reduce((s,p)=>s+getKgPed(p),0);}
+function getKgMes(m){return pedidos.filter(p=>p.mes===m).reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);}
 function calcCom(kp,kn){let c=0;for(let k=0;k<kn;k+=.25)c+=((kp+k>=CU)?CA:CB)*.25;return Math.round(c);}
-
-function getClienteNombre(){
-  const canal=document.getElementById('canal').value;
-  if(canal==='comunidad')return document.getElementById('cliente').value.trim();
-  if(canal==='revendedor'){
-    const idx=document.getElementById('rev-sel').value;
-    const rn=idx!==''?revendedores[idx].nombre:'';
-    const rc=document.getElementById('rev-cliente').value.trim();
-    return rc?`${rn} → ${rc}`:rn;
-  }
-  return document.getElementById('cafe-nombre').value;
-}
 
 function savePedido(){
   const canal=document.getElementById('canal').value,fecha=document.getElementById('fecha').value||hoy(),mes=fecha.slice(0,7);
-  const cli=getClienteNombre();
+  const cli=canal==='comunidad'?document.getElementById('cliente').value.trim():document.getElementById('cafe-nombre').value;
   const con=canal==='cafeteria'?document.getElementById('cafe-contacto').value:'';
-  const revIdx=canal==='revendedor'?document.getElementById('rev-sel').value:'';
   if(!cli){alert('Ingresa el nombre del cliente.');return;}if(!items.length){alert('Agrega ítems.');return;}
-  let tkg=items.reduce((s,i)=>s+i.totalKg,0);
-  if(canal==='cafeteria'){const kr=parseFloat(document.getElementById('cafe-kg-reales').value);if(!isNaN(kr)&&kr>0)tkg=kr;}
-  if(tkg<3){alert('El mínimo de compra es 3 kg.');return;}
-  const kp=getKgMes(mes),kn=tkg,com=calcCom(kp,kn);
-  const kgRealesInput=canal==='cafeteria'?parseFloat(document.getElementById('cafe-kg-reales').value):NaN;
-  const kgReales=!isNaN(kgRealesInput)&&kgRealesInput>0?kgRealesInput:null;
-  const ped={id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:estadoAct,revIdx:revIdx!==''?parseInt(revIdx):null,kgReales};
-  pedidos.push(ped);savePeds();
-  // Actualizar stats revendedor
-  if(canal==='revendedor'&&revIdx!==''){
-    revendedores[parseInt(revIdx)].totalPedidos=(revendedores[parseInt(revIdx)].totalPedidos||0)+1;
-    revendedores[parseInt(revIdx)].totalKg=(revendedores[parseInt(revIdx)].totalKg||0)+tkg;
-    saveRevs();
-  }
+  const kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=calcCom(kp,kn);
+  pedidos.push({id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:'pendiente'});
+  savePeds();
   const kt=getKgMes(mes);
-  let msg='✅ Pedido guardado.\nEstado: '+estadoAct+'\nComisión estimada: $'+com.toLocaleString('es-CL');
+  let msg='✅ Pedido guardado.\nComisión estimada: $'+com.toLocaleString('es-CL');
   if(kp<CU&&kt>=CU)msg='🎉 ¡Superaste los 25 kg!\n$2.000/kg activo desde el kg 26.\nComisión este pedido: $'+com.toLocaleString('es-CL');
   alert(msg);limpiar();
-}
-
-function genMsgConfirmacion(){
-  if(!items.length){alert('Agrega ítems primero.');return;}
-  const canal=document.getElementById('canal').value,fecha=document.getElementById('fecha').value||hoy();
-  const cli=getClienteNombre();
-  const sub=items.reduce((s,i)=>s+i.totalP,0),del=canal==='cafeteria'?3500:0;
-  const tkg=items.reduce((s,i)=>s+i.totalKg,0);
-  const total=sub+del;
-  // Calcular viernes más próximo
-  const d=new Date();const dow=d.getDay();const diasHastaViernes=dow<=5?5-dow:6;
-  const viernes=new Date(d);viernes.setDate(d.getDate()+diasHastaViernes);
-  const viernesStr=viernes.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
-
-  let lineas=items.map(it=>`   • ${it.cantidad}× ${it.label} ${it.origen} (${it.formato}) — $${it.totalP.toLocaleString('es-CL')}`).join('\n');
-  let msg=`✅ *¡Pedido confirmado, ${cli.split(' ')[0]}!*\n\n`;
-  msg+=`📋 *Resumen:*\n${lineas}\n`;
-  if(del)msg+=`   • Delivery — $${del.toLocaleString('es-CL')}\n`;
-  msg+=`\n💰 *Total: $${total.toLocaleString('es-CL')}*\n`;
-  msg+=`⚖️ Total: ${tkg.toFixed(2)} kg\n\n`;
-  msg+=`💳 *Transferencia a:*\n   Banco: [Tu banco]\n   Cuenta: [N° cuenta]\n   RUT: [Tu RUT]\n   Nombre: [Tu nombre]\n\n`;
-  msg+=`📦 *Retiro: ${viernesStr}*\n   Lugar: [Tu edificio/dirección]\n   Horario: [ej: 18h–20h]\n\n`;
-  msg+=`Envíame el comprobante y quedamos listos 🙌\n¡Gracias por tu preferencia! ☕`;
-
-  document.getElementById('wa-msg-pre').textContent=msg;
-  document.getElementById('wa-msg-sec').style.display='block';
-  document.getElementById('wa-msg-sec').scrollIntoView({behavior:'smooth'});
 }
 
 function genDoc(p){
   const sub=p.items.reduce((s,i)=>s+i.totalP,0),del=p.canal==='cafeteria'?3500:0;
   const tkg=p.items.reduce((s,i)=>s+i.totalKg,0),temp=p.items.reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
   const fd=p.fecha?new Date(p.fecha+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'}):'';
-  const estMap={pendiente:'⏳ Pendiente',confirmado:'✓ Confirmado',pagado:'💳 Pagado',entregado:'📦 Entregado'};
-  let t=`ORDEN DE COMPRA — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nRicardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\n${'─'.repeat(56)}\nFecha:  ${fd}\nCanal:  ${p.canal==='comunidad'?'Comunidad WhatsApp':p.canal==='revendedor'?'Revendedor':'Cafetería B2B'}\nEstado: ${estMap[p.estado||'pendiente']||'—'}\n${'─'.repeat(56)}\nDETALLE\n\n`;
+  let t=`ORDEN DE COMPRA — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nRicardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\n${'─'.repeat(56)}\nFecha:  ${fd}\nCanal:  ${p.canal==='comunidad'?'Comunidad WhatsApp':'Cafetería B2B'}\n${'─'.repeat(56)}\nDETALLE\n\n`;
   t+=`Origen           Molienda        Cant  Present.       P/unit       Total\n${'─'.repeat(68)}\n`;
-  p.items.forEach(it=>{t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(it.precioU.toLocaleString('es-CL')).padEnd(12)} $${it.totalP.toLocaleString('es-CL')}${it.unidad==='2x500'?' *':''}${it.revDesc?' [-'+it.revDesc+'%]':''}\n`;});
+  p.items.forEach(it=>{t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(it.precioU.toLocaleString('es-CL')).padEnd(12)} $${it.totalP.toLocaleString('es-CL')}${it.unidad==='2x500'?' *':''}\n`;});
   t+=`${'─'.repeat(68)}\n`;
   if(temp)t+=`* 2×500gr: cargo empaque doble $${EMP}/kg · Total empaque: $${temp.toLocaleString('es-CL')}\n`;
   t+=`Total kg: ${tkg.toFixed(2)} kg\nSubtotal: $${sub.toLocaleString('es-CL')}\n`;
   if(del)t+=`Delivery: $3.500\n`;
-  t+=`TOTAL: $${(sub+del).toLocaleString('es-CL')} (IVA incl.)\n${'─'.repeat(56)}\nGenerado por CRL Gestor de Pedidos v2 · Canal WhatsApp Mayorista\n`;
+  t+=`TOTAL: $${(sub+del).toLocaleString('es-CL')} (IVA incl.)\n`;
+  // Nota tramo comisiones
+  const kprev=typeof p._kprev==='number'?p._kprev:0;
+  const kn=tkg;
+  if(kprev<CU&&kprev+kn>CU){const kT1=CU-kprev,kT2=kn-kT1;t+=`${'─'.repeat(56)}\nCOMISIÓN (tramo)\nKg 1–${CU} (hasta completar 25 kg): $1.500/kg × ${kT1.toFixed(2)} kg = $${(CB*kT1).toLocaleString('es-CL')}\nKg ${CU+1} en adelante: $2.000/kg × ${kT2.toFixed(2)} kg = $${(CA*kT2).toLocaleString('es-CL')}\n`;}
+  else if(kprev>=CU){t+=`${'─'.repeat(56)}\nCOMISIÓN: $2.000/kg (tramo alto activo) × ${kn.toFixed(2)} kg = $${(CA*kn).toLocaleString('es-CL')}\n`;}
+  else{t+=`${'─'.repeat(56)}\nCOMISIÓN: $1.500/kg × ${kn.toFixed(2)} kg = $${(CB*kn).toLocaleString('es-CL')}\n`;}
+  t+=`${'─'.repeat(56)}\nGenerado por CRL Gestor de Pedidos · Canal WhatsApp Mayorista\n`;
   return t;
 }
 
 function previewDoc(){
   if(!items.length){alert('Agrega ítems primero.');return;}
   const canal=document.getElementById('canal').value,fecha=document.getElementById('fecha').value||hoy();
-  const cli=getClienteNombre();
-  document.getElementById('doc-pre').textContent=genDoc({id:'p',fecha,canal,cliente:cli,items:[...items],estado:estadoAct});
+  const cli=canal==='comunidad'?document.getElementById('cliente').value:document.getElementById('cafe-nombre').value;
+  const mes=fecha.slice(0,7),kprev=getKgMes(mes);
+  document.getElementById('doc-pre').textContent=genDoc({id:'p',fecha,canal,cliente:cli,items:[...items],_kprev:kprev});
   document.getElementById('doc-sec').style.display='block';document.getElementById('drive-res').innerHTML='';
   document.getElementById('doc-sec').scrollIntoView({behavior:'smooth'});
 }
 
 async function uploadDrive(){
   const canal=document.getElementById('canal').value,fecha=document.getElementById('fecha').value||hoy();
-  const cli=getClienteNombre();
-  const txt=genDoc({id:'u',fecha,canal,cliente:cli,items:[...items],estado:estadoAct}),nombre=`OC_CRL_${fecha}.txt`;
+  const cli=canal==='comunidad'?document.getElementById('cliente').value:document.getElementById('cafe-nombre').value;
+  const txt=genDoc({id:'u',fecha,canal,cliente:cli,items:[...items]}),nombre=`OC_CRL_${fecha}.txt`;
   const sp=document.getElementById('dspin');sp.style.display='inline-block';sp.parentElement.disabled=true;
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,mcp_servers:[{type:'url',url:'https://drivemcp.googleapis.com/mcp/v1',name:'gdrive'}],messages:[{role:'user',content:`Crea archivo Google Drive nombre "${nombre}" contenido:\n\n${txt}\n\nResponde con link.`}]})});
@@ -931,178 +529,6 @@ async function uploadDrive(){
   sp.style.display='none';sp.parentElement.disabled=false;
 }
 function copyDoc(){navigator.clipboard.writeText(document.getElementById('doc-pre').textContent).then(()=>alert('✓ Copiado. Pega directamente en WhatsApp.'));}
-function copyWA(id){const el=document.getElementById(id);navigator.clipboard.writeText(el.textContent||el.innerText).then(()=>{const btn=el.previousElementSibling?.querySelector('.wa-copy')||document.activeElement;alert('✓ Texto copiado');});}
-
-// ── SEMANA ─────────────────────────────────────────────────────────────────
-function getInicioSemana(){
-  const d=new Date();const dow=d.getDay();
-  const lunes=new Date(d);lunes.setDate(d.getDate()-(dow===0?6:dow-1));lunes.setHours(0,0,0,0);return lunes;
-}
-function renderSemana(){
-  renderCiclo('ciclo-grande');
-  const ci=getCicloInfo();
-  document.getElementById('semana-estado').innerHTML=`<div class="alert al-info"><div class="al-ic">ℹ</div><div>${ci.msg}</div></div>`;
-  const lunes=getInicioSemana();
-  const viernes=new Date(lunes);viernes.setDate(lunes.getDate()+4);
-  const lunStr=lunes.toISOString().split('T')[0];
-  const vieStr=viernes.toISOString().split('T')[0];
-  const ps=pedidos.filter(p=>p.fecha>=lunStr&&p.fecha<=vieStr);
-  const tkg=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
-  const tm=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0),0);
-  const eCount={pendiente:0,confirmado:0,pagado:0,entregado:0};
-  ps.forEach(p=>eCount[p.estado||'pendiente']++);
-  document.getElementById('semana-kpis').innerHTML=`
-    <span class="badge bd-gray">${ps.length} pedidos</span>
-    <span class="badge bd-blue">${tkg.toFixed(1)} kg</span>`;
-  if(!ps.length){document.getElementById('semana-lista').innerHTML='<div class="empty">Sin pedidos esta semana aún.</div>';return;}
-  // Agrupar por estado
-  const estados=['pendiente','confirmado','pagado','entregado'];
-  const eLabel={pendiente:'⏳ Pendiente',confirmado:'✓ Confirmado',pagado:'💳 Pagado',entregado:'📦 Entregado'};
-  const eClass={pendiente:'ep-pendiente',confirmado:'ep-confirmado',pagado:'ep-pagado',entregado:'ep-entregado'};
-  let html='';
-  estados.forEach(e=>{
-    const ep=ps.filter(p=>(p.estado||'pendiente')===e);
-    if(!ep.length)return;
-    html+=`<div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 5px;"><span class="epill ${eClass[e]}">${eLabel[e]}</span></div>`;
-    ep.forEach(p=>{
-      const kp=getKgPed(p),mp=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);
-      html+=`<div class="card" style="margin-bottom:8px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;">
-          <div>
-            <div style="font-size:13px;font-weight:500;">${p.cliente}</div>
-            <div style="font-size:11px;color:#6b7280;">${p.fecha} · ${kp.toFixed(2)} kg · $${mp.toLocaleString('es-CL')}</div>
-            <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${p.items.map(i=>i.origen+' '+i.label).join(' · ')}</div>
-          </div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;">
-            <button class="btn btn-sm" onclick="verOC('${p.id}')">Ver OC</button>
-            <button class="btn btn-sm btn-wa" onclick="genMsgPedidoExistente('${p.id}')">📱 WA</button>
-            <select style="font-size:11px;padding:3px 6px;border-radius:5px;width:auto;" onchange="cambiarEstado('${p.id}',this.value)">
-              ${estados.map(es=>`<option value="${es}" ${(p.estado||'pendiente')===es?'selected':''}>${eLabel[es]}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-      </div>`;
-    });
-  });
-  document.getElementById('semana-lista').innerHTML=html;
-}
-
-function cambiarEstadoMes(id,nuevoEstado){
-  const p=pedidos.find(x=>x.id==id);if(!p)return;
-  p.estado=nuevoEstado;savePeds();renderMes();
-}
-function cambiarEstado(id,nuevoEstado){
-  const p=pedidos.find(x=>x.id==id);if(!p)return;
-  p.estado=nuevoEstado;savePeds();renderSemana();
-}
-
-function genMsgPedidoExistente(id){
-  const p=pedidos.find(x=>x.id==id);if(!p)return;
-  const sub=p.items.reduce((s,i)=>s+i.totalP,0),del=p.canal==='cafeteria'?3500:0;
-  const tkg=p.items.reduce((s,i)=>s+i.totalKg,0),total=sub+del;
-  const nombre=p.cliente.split(' ')[0];
-  let lineas=p.items.map(it=>`   • ${it.cantidad}× ${it.label} ${it.origen} (${it.formato}) — $${it.totalP.toLocaleString('es-CL')}`).join('\n');
-  let msg=`✅ *¡Pedido confirmado, ${nombre}!*\n\n📋 *Resumen:*\n${lineas}\n`;
-  if(del)msg+=`   • Delivery — $${del.toLocaleString('es-CL')}\n`;
-  msg+=`\n💰 *Total: $${total.toLocaleString('es-CL')}*\n⚖️ Total: ${tkg.toFixed(2)} kg\n\n`;
-  msg+=`💳 *Transferencia a:*\n   Banco: [Tu banco]\n   Cuenta: [N° cuenta]\n   RUT: [Tu RUT]\n   Nombre: [Tu nombre]\n\n`;
-  msg+=`📦 *Retiro: próximo viernes*\n   Lugar: [Tu edificio]\n   Horario: [ej: 18h–20h]\n\nEnvíame el comprobante y quedamos listos 🙌 ☕`;
-  // Abrir modal con el mensaje
-  document.getElementById('m-nombre').textContent='📱 Mensaje WhatsApp — '+p.cliente;
-  document.getElementById('m-content').innerHTML=`<div class="wa-block"><div class="wa-title">Copia y pega en WhatsApp <button class="wa-copy" onclick="navigator.clipboard.writeText(document.getElementById('wa-modal-txt').textContent).then(()=>alert('✓ Copiado'))">Copiar</button></div><div class="wa-pre" id="wa-modal-txt">${msg}</div></div>`;
-  document.getElementById('ov').style.display='flex';
-}
-
-// ── REVENDEDORES ──────────────────────────────────────────────────────────────
-function renderRevendedores(){
-  const el=document.getElementById('rev-lista'),kpi=document.getElementById('rev-kpi');
-  if(!revendedores.length){
-    el.innerHTML='<div class="card"><div class="empty">Sin revendedores registrados. Agrega el primero abajo.</div></div>';
-    kpi.innerHTML=`<div class="kpi"><div class="kpi-lb">Revendedores</div><div class="kpi-vl">0</div></div>`;
-    return;
-  }
-  const totalKgRev=revendedores.reduce((s,r)=>s+(r.totalKg||0),0);
-  const totalPRev=revendedores.reduce((s,r)=>s+(r.totalPedidos||0),0);
-  kpi.innerHTML=`<div class="kpi"><div class="kpi-lb">Revendedores</div><div class="kpi-vl">${revendedores.length}</div></div><div class="kpi"><div class="kpi-lb">Kg gestionados</div><div class="kpi-vl">${totalKgRev.toFixed(1)}</div></div><div class="kpi"><div class="kpi-lb">Pedidos</div><div class="kpi-vl">${totalPRev}</div></div>`;
-  el.innerHTML=revendedores.map((r,i)=>`<div class="rev-card">
-    <div class="rev-header">
-      <div>
-        <div class="rev-name">🤝 ${r.nombre}</div>
-        <div class="rev-meta">${r.grupo||'Sin grupo asignado'}${r.wa?' · '+r.wa:''}</div>
-      </div>
-      <div style="display:flex;gap:5px;">
-        <span class="badge bd-rev">−${r.descuento}%</span>
-        <button class="btn btn-sm btn-danger" onclick="eliminarRev(${i})">×</button>
-      </div>
-    </div>
-    ${r.notas?`<div style="font-size:11px;color:#6b7280;font-style:italic;margin-bottom:6px;">${r.notas}</div>`:''}
-    <div class="rev-stats">
-      <div class="rev-stat"><div class="rev-stat-v">${r.totalPedidos||0}</div><div class="rev-stat-l">Pedidos</div></div>
-      <div class="rev-stat"><div class="rev-stat-v">${(r.totalKg||0).toFixed(1)}</div><div class="rev-stat-l">Kg</div></div>
-      <div class="rev-stat"><div class="rev-stat-v">${r.minKg}</div><div class="rev-stat-l">Mín. kg</div></div>
-    </div>
-    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-      <button class="btn btn-sm btn-wa" onclick="genMsgRevendedor(${i})">📱 Generar mensaje WA</button>
-    </div>
-  </div>`).join('');
-}
-
-function addRevendedor(){
-  const nombre=document.getElementById('rn-nombre').value.trim();
-  const wa=document.getElementById('rn-wa').value.trim();
-  const grupo=document.getElementById('rn-grupo').value.trim();
-  const descuento=parseInt(document.getElementById('rn-desc').value)||10;
-  const minKg=parseInt(document.getElementById('rn-min').value)||9;
-  const notas=document.getElementById('rn-notas').value.trim();
-  if(!nombre){document.getElementById('rev-res').innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Ingresa el nombre del revendedor.</div></div>';return;}
-  revendedores.push({nombre,wa,grupo,descuento,minKg,notas,totalPedidos:0,totalKg:0});
-  saveRevs();fillRevSel();
-  ['rn-nombre','rn-wa','rn-grupo','rn-notas'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('rn-desc').value='10';document.getElementById('rn-min').value='9';
-  document.getElementById('rev-res').innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div><strong>${nombre}</strong> agregado como revendedor.</div></div>`;
-  renderRevendedores();setTimeout(()=>document.getElementById('rev-res').innerHTML='',3000);
-}
-
-function eliminarRev(i){
-  if(!confirm(`¿Eliminar a ${revendedores[i].nombre}?`))return;
-  revendedores.splice(i,1);saveRevs();fillRevSel();renderRevendedores();
-}
-
-function genMsgRevendedor(i){
-  const r=revendedores[i];
-  const catOn=cat.filter(c=>c.on);
-  let catTxt=catOn.map(c=>`   • ${c.n} — $${c.km.toLocaleString('es-CL')}/kg (precio revendedor −${r.descuento}%: $${Math.round(c.km*(1-r.descuento/100)).toLocaleString('es-CL')})`).join('\n');
-  let msg=`☕ *Hola ${r.nombre.split(' ')[0]}!*\n\nTe comparto las variedades disponibles esta semana con tu precio de revendedor (−${r.descuento}%):\n\n${catTxt}\n\n📋 *Recordatorio:*\n• Pedido mínimo: ${r.minKg} kg\n• Cierre de pedidos: miércoles 20h\n• Retiro: viernes\n\n¡Cualquier consulta con gusto! ☕`;
-  document.getElementById('m-nombre').textContent='📱 Mensaje para '+r.nombre;
-  document.getElementById('m-content').innerHTML=`<div class="wa-block"><div class="wa-title">Copia y pega en WhatsApp <button class="wa-copy" onclick="navigator.clipboard.writeText(document.getElementById('wa-modal-txt').textContent).then(()=>alert('✓ Copiado'))">Copiar</button></div><div class="wa-pre" id="wa-modal-txt">${msg}</div></div>`;
-  document.getElementById('ov').style.display='flex';
-}
-
-// ── TEXTOS WA ─────────────────────────────────────────────────────────────────
-function renderWATextos(){
-  const catOn=cat.filter(c=>c.on);
-  let precioTxt=`☕ *Nuestros precios mayoristas:*\n\n`;
-  catOn.forEach(c=>{precioTxt+=`☕ *${c.n}* — $${c.km.toLocaleString('es-CL')}/kg · $${c.gm.toLocaleString('es-CL')}/250gr\n   _${c.perf||c.p+' · '+c.v}_\n\n`;});
-  precioTxt+=`Mínimo de compra: *3 Kg* (pueden ser variedades mezcladas).\n¿Te agrego al pedido de esta semana? 😊`;
-  document.getElementById('wat-3').textContent=precioTxt;
-}
-
-function genCatWA(){
-  const catOn=cat.filter(c=>c.on);
-  if(!catOn.length){alert('No hay orígenes disponibles.');return;}
-  let txt=`☕ *Variedades disponibles esta semana:*\n\n`;
-  catOn.forEach(c=>{
-    const dk=desc(c.ku,c.km);
-    txt+=`🫘 *${c.n}* ${c.nuevo?'🆕':''}\n`;
-    txt+=`   ${c.p} · ${c.v}\n`;
-    if(c.perf)txt+=`   _${c.perf}_\n`;
-    txt+=`   Mayorista: *$${c.km.toLocaleString('es-CL')}/kg* · 250gr: $${c.gm.toLocaleString('es-CL')}\n`;
-    txt+=`   _(Normal: $${c.ku.toLocaleString('es-CL')}/kg — ahorras ${dk}%)_\n\n`;
-  });
-  txt+=`📋 Mínimo: *3 Kg* | Cierre: miércoles 20h | Retiro: viernes`;
-  document.getElementById('cat-wa-txt').textContent=txt;
-  document.getElementById('cat-wa-out').style.display='block';
-}
 
 // ── CATÁLOGO ──────────────────────────────────────────────────────────────────
 function renderCat(){
@@ -1206,9 +632,8 @@ function renderMes(){
   const po={};mp.forEach(p=>p.items.forEach(i=>{po[i.origen]=(po[i.origen]||0)+i.totalKg;}));
   const mx=Math.max(...Object.values(po),1);
   document.getElementById('bars-mes').innerHTML=Object.keys(po).length?'<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Por origen</div>'+Object.entries(po).sort((a,b)=>b[1]-a[1]).map(([o,k])=>`<div><div class="ob-lbl"><span>${o}</span><span>${k.toFixed(2)} kg</span></div><div class="ob-track"><div class="ob-fill" style="width:${Math.round(k/mx*100)}%;background:${COLORS[o]||'#888'};"></div></div></div>`).join(''):'';
-  document.getElementById('ped-mes').innerHTML=mp.length?mp.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=getKgPed(p),mp3=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);const eClass={pendiente:'bd-gray',confirmado:'bd-blue',pagado:'bd-rev',entregado:'bd-green'};const eLbl={pendiente:'⏳',confirmado:'✓',pagado:'💳',entregado:'📦'};const est=p.estado||'pendiente';return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:4px;"><div><div style="font-size:12px;font-weight:500;">${p.canal==='comunidad'?'WhatsApp':p.canal==='revendedor'?'Revendedor':'B2B'} · ${p.cliente}</div><div style="font-size:11px;color:#6b7280;">${p.fecha} · ${kp.toFixed(2)} kg · $${mp3.toLocaleString('es-CL')} · Com. $${(p.comision||0).toLocaleString('es-CL')}</div></div><select style="font-size:11px;padding:3px 6px;border-radius:5px;width:auto;" onchange="cambiarEstadoMes('${p.id}',this.value)">
-              ${['pendiente','confirmado','pagado','entregado'].map(es=>`<option value="${es}" ${est===es?'selected':''}>${{pendiente:'⏳ Pendiente',confirmado:'✓ Confirmado',pagado:'💳 Pagado',entregado:'📦 Entregado'}[es]}</option>`).join('')}
-            </select></div>${p.items.map(i=>`<div style="font-size:11px;color:#6b7280;padding:2px 0;">${i.origen} · ${i.formato} · ${i.cantidad}× ${i.label} · $${i.totalP.toLocaleString('es-CL')}</div>`).join('')}<div style="margin-top:7px;display:flex;gap:5px;"><button class="btn btn-sm" onclick="verOC('${p.id}')">Ver OC</button><button class="btn btn-sm btn-wa" onclick="genMsgPedidoExistente('${p.id}')">📱 WA</button></div></div>`;}).join(''):'';
+  const ESTADOS={pendiente:'🟡 Pendiente',entregado:'🚚 Entregado',pagado:'✅ Pagado',finalizado:'⬛ Finalizado'};
+  document.getElementById('ped-mes').innerHTML=mp.length?mp.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp3=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);const est=p.estado||'pendiente';return`<div class="card"><div class="card-hd"><div><div class="card-title">${p.canal==='comunidad'?'Pedido WhatsApp':'Cafetería B2B'}</div><div class="card-meta">${p.fecha} · ${kp.toFixed(2)} kg · $${mp3.toLocaleString('es-CL')} · Com. $${(p.comision||0).toLocaleString('es-CL')}</div></div><span class="badge ${p.canal==='comunidad'?'bd-blue':'bd-red'}">${p.canal==='comunidad'?'Comunidad':'B2B'}</span></div>${p.items.map(i=>`<div style="font-size:11px;color:#6b7280;padding:2px 0;">${i.origen} · ${i.formato} · ${i.cantidad}× ${i.label} · $${i.totalP.toLocaleString('es-CL')}</div>`).join('')}<div style="margin-top:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;"><select onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 8px;width:auto;">${Object.entries(ESTADOS).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select><button class="btn btn-sm" onclick="verOC('${p.id}')">Ver OC</button></div></div>`;}).join(''):'';
 }
 
 function genReporteTexto(){
@@ -1219,13 +644,12 @@ function genReporteTexto(){
   const po={};mp.forEach(p=>p.items.forEach(i=>{po[i.origen]=(po[i.origen]||{kg:0,monto:0});po[i.origen].kg+=i.totalKg;po[i.origen].monto+=i.totalP;}));
   const cow=mp.filter(p=>p.canal==='comunidad').reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
   const ckv=mp.filter(p=>p.canal==='cafeteria').reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
-  const crv=mp.filter(p=>p.canal==='revendedor').reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);
   const cl=getAllCl().filter(c=>pedidos.some(p=>p.cliente===c.nombre&&p.mes===MES_ACTUAL));
-  let t=`REPORTE MENSUAL — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nCanal: WhatsApp Mayorista · Período: ${MES_ACTUAL}\n${'═'.repeat(54)}\n\nRESUMEN\nTotal: ${tkg.toFixed(2)} kg · $${tm.toLocaleString('es-CL')} · Comisión: $${tc.toLocaleString('es-CL')}\nComunidad: ${cow.toFixed(2)} kg · Revendedores: ${crv.toFixed(2)} kg · B2B: ${ckv.toFixed(2)} kg · Pedidos: ${mp.length}\n\nPOR ORIGEN\n`;
+  let t=`REPORTE MENSUAL — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nCanal: WhatsApp Mayorista · Período: ${MES_ACTUAL}\n${'═'.repeat(54)}\n\nRESUMEN\nTotal: ${tkg.toFixed(2)} kg · $${tm.toLocaleString('es-CL')} · Comisión: $${tc.toLocaleString('es-CL')}\nComunidad: ${cow.toFixed(2)} kg · B2B: ${ckv.toFixed(2)} kg · Pedidos: ${mp.length}\n\nPOR ORIGEN\n`;
   Object.entries(po).sort((a,b)=>b[1].kg-a[1].kg).forEach(([o,d])=>t+=`${o.padEnd(18)} ${d.kg.toFixed(2)} kg · $${d.monto.toLocaleString('es-CL')}\n`);
   t+=`\nPERFILES DE CLIENTES\n`;cl.forEach(c=>t+=`${c.nombre.padEnd(22)} ${c.perfil} · ${c.tkg.toFixed(2)} kg\n`);
   t+=`\nDETALLE\n`;
-  mp.forEach((p,i)=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp2=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);t+=`\n${i+1}. ${p.fecha} · ${p.cliente} · ${p.canal==='comunidad'?'WhatsApp':p.canal==='revendedor'?'Revendedor':'B2B'} · ${p.estado||'pendiente'}\n`;p.items.forEach(it=>t+=`   ${it.origen} · ${it.formato} · ${it.cantidad}× ${it.label} · $${it.totalP.toLocaleString('es-CL')}\n`);t+=`   Total: $${mp2.toLocaleString('es-CL')} · Comisión: $${(p.comision||0).toLocaleString('es-CL')}\n`;});
+  mp.forEach((p,i)=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp2=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);t+=`\n${i+1}. ${p.fecha} · ${p.cliente} · ${p.canal==='comunidad'?'WhatsApp':'B2B'}\n`;p.items.forEach(it=>t+=`   ${it.origen} · ${it.formato} · ${it.cantidad}× ${it.label} · $${it.totalP.toLocaleString('es-CL')}\n`);t+=`   Total: $${mp2.toLocaleString('es-CL')} · Comisión: $${(p.comision||0).toLocaleString('es-CL')}\n`;});
   t+=`\n${'═'.repeat(54)}\nGenerado: ${new Date().toLocaleDateString('es-CL')}\n`;return t;
 }
 
@@ -1236,7 +660,12 @@ async function genReporte(){
   sp.style.display='none';sp.parentElement.disabled=false;
 }
 
-function verOC(id){const p=pedidos.find(x=>x.id==id);if(!p)return;document.querySelectorAll('.tab')[0].click();setTimeout(()=>{document.getElementById('doc-pre').textContent=genDoc(p);document.getElementById('doc-sec').style.display='block';document.getElementById('drive-res').innerHTML='';},100);}
+function cambiarEstado(id,val){const p=pedidos.find(x=>x.id==id);if(p){p.estado=val;savePeds();}}
+function verOC(id){const p=pedidos.find(x=>x.id==id);if(!p)return;
+  const idx=pedidos.filter(x=>x.mes===p.mes).sort((a,b)=>a.id-b.id).findIndex(x=>x.id===p.id);
+  const antes=pedidos.filter(x=>x.mes===p.mes).sort((a,b)=>a.id-b.id).slice(0,idx).reduce((s,x)=>s+x.items.reduce((a,i)=>a+i.totalKg,0),0);
+  p._kprev=antes;
+  document.querySelectorAll('.tab')[0].click();setTimeout(()=>{document.getElementById('doc-pre').textContent=genDoc(p);document.getElementById('doc-sec').style.display='block';document.getElementById('drive-res').innerHTML='';},100);}
 
 function renderHist(){
   const pm={};pedidos.forEach(p=>{if(!pm[p.mes])pm[p.mes]=[];pm[p.mes].push(p);});
@@ -1249,27 +678,20 @@ function renderHist(){
 }
 
 function limpiar(){
-  items=[];estadoAct='pendiente';
-  ['cliente','cafe-contacto','rev-cliente','cafe-kg-reales'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  items=[];
+  ['cliente','cafe-contacto'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('origen').value='';document.getElementById('cantidad').value='1';
-  document.getElementById('rev-sel').value='';document.getElementById('rev-info').innerHTML='';
   document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));
   document.querySelector('[data-u="kg"]').classList.add('active');uAct='kg';
   document.getElementById('ph').innerHTML='';document.getElementById('ri').style.display='none';
-  document.getElementById('doc-sec').style.display='none';
-  document.getElementById('items-wrap').style.display='none';
-  document.getElementById('wa-msg-sec').style.display='none';
+  document.getElementById('doc-sec').style.display='none';document.getElementById('items-wrap').style.display='none';
   document.getElementById('cant-lbl').textContent='(nº de kilos)';
-  document.querySelectorAll('.epill').forEach(p=>p.classList.remove('ep-sel'));
-  document.querySelector('[data-e="pendiente"]').classList.add('ep-sel');
-  document.getElementById('canal').value='comunidad';onCanalChange();
 }
 
 // INIT
 document.getElementById('hoy-lbl').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('fecha').value=hoy();
-load();fillOrigen();fillRevSel();
-renderCiclo('ciclo-mini',true);
+load();fillOrigen();
 </script>
 </body>
 </html>
