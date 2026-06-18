@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">v.balde6-fix-3</div>
+  <div style="font-size:9px;opacity:.4;">v.supabase-sync</div>
 </div>
 
 <div class="container">
@@ -198,7 +198,6 @@ textarea{resize:vertical;min-height:52px;}
       <button class="upill active" data-u="kg" onclick="selU(this)">1 kg</button>
       <button class="upill upill-p" data-u="2x500" onclick="selU(this)">2×500 gr <span style="font-size:9px;opacity:.8;">+$700</span></button>
       <button class="upill" data-u="250g" onclick="selU(this)">250 gr</button>
-      <button class="upill" data-u="balde6" onclick="selU(this)">Balde 6 kg <span style="font-size:9px;opacity:.8;">Etiopía</span></button>
     </div>
     <div class="ph" id="ph"></div>
   </div>
@@ -322,7 +321,6 @@ textarea{resize:vertical;min-height:52px;}
 
 <script>
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
-const SK='crl_pedidos_wsp', CK='crl_catalogo_wsp';
 const CU=25, CB=1500, CA=2000, EMP=700;
 
 // Catálogo base actualizado desde planilla Drive (mayo 2026)
@@ -346,19 +344,36 @@ const COLORS={Roma:'#3266ad',Brasil:'#e8823a',Colombia:'#a14fae','Pink Bourbon':
 const OTIPO={Roma:'clasico',Brasil:'clasico',Perú:'accesible',Colombia:'versatil',Bolivia:'accesible',Etiopía:'especialidad',Ruanda:'especialidad',Guatemala:'especialidad','Pink Bourbon':'especialidad',Geisha:'especialidad','Caturra-Chiroso':'especialidad','Decaf Colombia':'versatil',Honduras:'accesible'};
 const FTIPO={'Grano':'exp','Filtrado':'exp','Francesa':'exp','Espresso':'clas','Italiana':'clas'};
 
-let pedidos=[], cat=[], items=[], uAct='kg';
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SB_URL='https://tgrwscyskqucsxndvyoa.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncndzY3lza3F1Y3N4bmR2eW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MzMzMzMsImV4cCI6MjA5NTQwOTMzM30.YngfJtMSloUopjXFmQnKgLf--crfJ1uNFslxpsujbyk';
+async function sb(path,opts={}){
+  const r=await fetch(`${SB_URL}/rest/v1/${path}`,{...opts,headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});
+  if(!r.ok){console.error('SB error',path,await r.text());throw new Error('SB '+r.status);}
+  return r.status===204?null:r.json();
+}
+async function sbSelect(t,q=''){return sb(`${t}?select=*${q}`);}
+async function sbInsert(t,row){return sb(t,{method:'POST',body:JSON.stringify(row)});}
+async function sbUpdate(t,match,patch){return sb(`${t}?${match}`,{method:'PATCH',body:JSON.stringify(patch)});}
+async function sbUpsert(t,row,onConflict){return sb(`${t}?on_conflict=${onConflict}`,{method:'POST',body:JSON.stringify(row),prefer:'return=representation,resolution=merge-duplicates'});}
+async function sbDelete(t,match){return sb(`${t}?${match}`,{method:'DELETE'});}
+
+let pedidos=[], cat=[], items=[], uAct='kg', clientes=[];
 const MES_ACTUAL=new Date().toISOString().slice(0,7);
 
-// Storage local (localStorage fallback para standalone)
-function storageGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
-function storageSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function normCat(row){return{n:row.n,p:row.p,v:row.v,km:row.km,gm:row.gm,ku:row.ku,gu:row.gu,perf:row.perf,on:row.on_stock,nuevo:row.nuevo,bm:row.bm,bkg:row.bkg?parseFloat(row.bkg):null};}
+function denormCat(c){return{n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,ku:c.ku,gu:c.gu,perf:c.perf,on_stock:c.on,nuevo:!!c.nuevo,bm:c.bm||null,bkg:c.bkg||null};}
 
-function load(){
-  pedidos=storageGet(SK)||[];
-  cat=storageGet(CK)||JSON.parse(JSON.stringify(CAT_BASE));
+async function load(){
+  try{
+    const[peds,catRows,clis]=await Promise.all([sbSelect('pedidos','&order=created_at.asc'),sbSelect('catalogo','&order=n.asc'),sbSelect('clientes','&order=creado_en.asc')]);
+    pedidos=peds.map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:p.cliente,contacto:p.contacto||'',cafeNombre:p.cafe_nombre||'',cafeContacto:p.cafe_contacto||'',items:p.items||[],comision:p.comision||0,estado:p.estado||'pendiente',codigo:p.codigo||''}));
+    cat=catRows.map(normCat);
+    clientes=clis.map(c=>({id:c.id,nombre:c.nombre,tel:c.tel||'',dir:c.dir||'',notas:c.notas||'',creado:c.creado_en||''}));
+  }catch(e){console.error('Error cargando Supabase',e);alert('No se pudo conectar a Supabase. Revisa tu conexión.');pedidos=[];cat=[];clientes=[];}
 }
-function savePeds(){storageSet(SK,pedidos);}
-function saveCatData(){storageSet(CK,cat);}
+async function savePeds(){/* no-op: cada operación de pedido ya escribe directo a Supabase */}
+async function saveCatData(){/* no-op: addOrigen/togCat escriben directo */}
 
 function hoy(){return new Date().toISOString().split('T')[0];}
 function getCat(n){return cat.find(c=>c.n===n);}
@@ -397,22 +412,27 @@ function selU(el){
 
 function getPU(){
   const n=document.getElementById('origen').value,c=getCat(n);if(!c)return null;
+  if(c.bkg){return{precio:c.km,pesoKg:c.bkg,label:`Balde ${c.bkg} kg`,emp:0,unit:c.ku||c.km};}
   if(uAct==='kg')return{precio:c.km,pesoKg:1,label:'1 kg',emp:0,unit:c.ku};
   if(uAct==='2x500')return{precio:c.km+EMP,pesoKg:1,label:'2×500 gr',emp:EMP,unit:c.ku+EMP};
-  if(uAct==='balde6'){const PB=32150;return{precio:PB*6,pesoKg:6,label:'Balde 6 kg (Etiopía)',emp:0,unit:PB*6,precioKg:PB};}
   return{precio:c.gm,pesoKg:.25,label:'250 gr',emp:0,unit:c.gu};
 }
 
-function onOrigenChange(){updHint();updRI();}
+function onOrigenChange(){
+  const c=getCat(document.getElementById('origen').value);
+  document.getElementById('upills').style.display=c&&c.bkg?'none':'flex';
+  document.getElementById('cant-lbl').textContent=c&&c.bkg?'(nº de baldes)':uAct==='kg'?'(nº de kilos)':uAct==='2x500'?'(nº de paquetes dobles)':'(nº de fracciones 250gr)';
+  updHint();updRI();
+}
 
 function updHint(){
   const n=document.getElementById('origen').value,c=getCat(n),ph=document.getElementById('ph');
   if(!c){ph.innerHTML='';return;}
   const pu=getPU();if(!pu){ph.innerHTML='';return;}
+  if(c.bkg){const d=desc(c.ku||c.km,c.km);ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} total · $${Math.round(c.km/c.bkg).toLocaleString('es-CL')}/kg × ${c.bkg} kg${c.ku?` <span style="color:#15803d;font-size:9px;">−${d}% vs precio unitario</span>`:''}`;return;}
   const d=uAct==='kg'?desc(c.ku,c.km):uAct==='250g'?desc(c.gu,c.gm):null;
   const dt=d?` <span style="color:#15803d;font-size:9px;">−${d}% vs precio normal</span>`:'';
-  if(uAct==='balde6')ph.innerHTML=`$192.900 total · $32.150/kg × 6 kg <span style="color:#15803d;font-size:9px;">−2% vs precio unitario</span>`;
-  else if(uAct==='2x500')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} <span style="color:#6d28d9;font-size:9px;">(kg $${c.km.toLocaleString('es-CL')} + $${EMP} empaque)</span>`;
+  if(uAct==='2x500')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} <span style="color:#6d28d9;font-size:9px;">(kg $${c.km.toLocaleString('es-CL')} + $${EMP} empaque)</span>`;
   else ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')}/u · Normal: $${pu.unit.toLocaleString('es-CL')}${dt}`;
 }
 
@@ -433,13 +453,8 @@ function addItem(){
   const n=document.getElementById('origen').value,f=document.getElementById('formato').value;
   const q=parseInt(document.getElementById('cantidad').value)||1;
   if(!n){alert('Selecciona un origen.');return;}
-  const pu=getPU();
-  console.log('[addItem] uAct=',uAct,'pu=',JSON.stringify(pu));
-  // Blindaje: si la presentación activa es balde6, forzar valores correctos sin depender de getPU
-  let pesoKg=pu.pesoKg,precio=pu.precio,label=pu.label,emp=pu.emp;
-  if(uAct==='balde6'){const PB=32150;pesoKg=6;precio=PB*6;label='Balde 6 kg (Etiopía)';emp=0;}
-  items.push({origen:n,formato:f,cantidad:q,unidad:uAct,pesoKg:pesoKg,precioU:precio,emp:emp,totalKg:pesoKg*q,totalP:precio*q,label:label});
-  console.log('[addItem] item guardado=',JSON.stringify(items[items.length-1]));
+  const pu=getPU();if(!pu){alert('Error de precio. Revisa el origen.');return;}
+  items.push({origen:n,formato:f,cantidad:q,unidad:uAct,pesoKg:pu.pesoKg,precioU:pu.precio,emp:pu.emp,totalKg:pu.pesoKg*q,totalP:pu.precio*q,label:pu.label});
   document.getElementById('origen').value='';document.getElementById('cantidad').value='1';
   document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));
   document.querySelector('[data-u="kg"]').classList.add('active');uAct='kg';
@@ -476,14 +491,17 @@ function rmItem(i){items.splice(i,1);renderItems();}
 function getKgMes(m){return pedidos.filter(p=>p.mes===m).reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0);}
 function calcCom(kp,kn){let c=0;for(let k=0;k<kn;k+=.25)c+=((kp+k>=CU)?CA:CB)*.25;return Math.round(c);}
 
-function savePedido(){
+async function savePedido(){
   const canal=document.getElementById('canal').value,fecha=document.getElementById('fecha').value||hoy(),mes=fecha.slice(0,7);
   const cli=canal==='comunidad'?document.getElementById('cliente').value.trim():document.getElementById('cafe-nombre').value;
   const con=canal==='cafeteria'?document.getElementById('cafe-contacto').value:'';
   if(!cli){alert('Ingresa el nombre del cliente.');return;}if(!items.length){alert('Agrega ítems.');return;}
   const kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=calcCom(kp,kn);
-  pedidos.push({id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:'pendiente'});
-  savePeds();
+  const row={id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:'pendiente',cafe_nombre:canal==='cafeteria'?cli:'',cafe_contacto:con};
+  try{
+    await sbInsert('pedidos',row);
+    pedidos.push({id:row.id,fecha,mes,canal,cliente:cli,contacto:con,cafeNombre:row.cafe_nombre,cafeContacto:con,items:[...items],comision:com,estado:'pendiente',codigo:''});
+  }catch(e){alert('Error guardando en Supabase. Revisa tu conexión.');return;}
   const kt=getKgMes(mes);
   let msg='✅ Pedido guardado.\nComisión estimada: $'+com.toLocaleString('es-CL');
   if(kp<CU&&kt>=CU)msg='🎉 ¡Superaste los 25 kg!\n$2.000/kg activo desde el kg 26.\nComisión este pedido: $'+com.toLocaleString('es-CL');
@@ -542,6 +560,20 @@ function renderCat(){
   document.getElementById('cnt-on').textContent=on+' activos';
   document.getElementById('cnt-off').textContent=(cat.length-on)+' sin stock';
   document.getElementById('cat-grid').innerHTML=cat.map((c,i)=>{
+    if(c.bkg){
+      const d=c.ku?desc(c.ku,c.km):null;
+      return`<div class="cc ${c.on?'':'off'}">
+        <div class="cc-tog"><button class="togbtn" onclick="togCat(${i})">${c.on?'⏸ Pausar':'▶ Activar'}</button></div>
+        <div class="cc-name">${c.n}${c.nuevo?'<span class="nbadge">NUEVO</span>':''}</div>
+        <div class="cc-var">${c.p} · ${c.v}</div>
+        ${c.perf?`<div class="cc-perf">${c.perf}</div>`:''}
+        <div class="cc-prices">
+          <div class="cp-b"><div class="cp-lbl">Balde ${c.bkg} kg</div><div class="cp-may">$${c.km.toLocaleString('es-CL')} total</div><div class="cp-unit">$${Math.round(c.km/c.bkg).toLocaleString('es-CL')}/kg</div></div>
+          ${d?`<div class="cp-b" style="align-self:flex-end;"><span class="cp-desc">−${d}% vs unitario</span></div>`:''}
+        </div>
+        <span class="cstat ${c.on?'son':'soff'}">${c.on?'✓ Disponible':'Sin stock'}</span>
+      </div>`;
+    }
     const dk=desc(c.ku,c.km),d2=desc(c.gu,c.gm);
     return`<div class="cc ${c.on?'':'off'}">
       <div class="cc-tog"><button class="togbtn" onclick="togCat(${i})">${c.on?'⏸ Pausar':'▶ Activar'}</button></div>
@@ -557,15 +589,21 @@ function renderCat(){
     </div>`;
   }).join('');
 }
-function togCat(i){cat[i].on=!cat[i].on;saveCatData();renderCat();fillOrigen();}
-function addOrigen(){
+async function togCat(i){
+  cat[i].on=!cat[i].on;renderCat();fillOrigen();
+  try{await sbUpdate('catalogo',`n=eq.${encodeURIComponent(cat[i].n)}`,{on_stock:cat[i].on});}
+  catch(e){cat[i].on=!cat[i].on;renderCat();fillOrigen();alert('Error actualizando Supabase.');}
+}
+async function addOrigen(){
   const n=document.getElementById('nn').value.trim(),p=document.getElementById('np').value;
   const v=document.getElementById('nv').value.trim();
   const km=parseInt(document.getElementById('nkm').value),gm=parseInt(document.getElementById('n2m').value);
   const ku=parseInt(document.getElementById('nku').value),gu=parseInt(document.getElementById('n2u').value);
   const perf=document.getElementById('nperf').value.trim(),on=document.getElementById('ndisp').checked;
   if(!n||isNaN(km)||isNaN(gm)||isNaN(ku)||isNaN(gu)){document.getElementById('new-res').innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Completa nombre y los 4 precios.</div></div>';return;}
-  cat.push({n,p,v,km,gm,ku,gu,perf,on,nuevo:true});saveCatData();
+  const nuevoC={n,p,v,km,gm,ku,gu,perf,on,nuevo:true};
+  try{await sbInsert('catalogo',denormCat(nuevoC));}catch(e){document.getElementById('new-res').innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Error guardando en Supabase.</div></div>';return;}
+  cat.push(nuevoC);
   ['nn','nv','nperf','nkm','n2m','nku','n2u'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('new-res').innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div><strong>${n}</strong> agregado${on?' y activado':' (sin stock)'}.</div></div>`;
   fillOrigen();renderCat();setTimeout(()=>document.getElementById('new-res').innerHTML='',3000);
@@ -666,7 +704,11 @@ async function genReporte(){
   sp.style.display='none';sp.parentElement.disabled=false;
 }
 
-function cambiarEstado(id,val){const p=pedidos.find(x=>x.id==id);if(p){p.estado=val;savePeds();}}
+async function cambiarEstado(id,val){
+  const p=pedidos.find(x=>x.id==id);if(!p)return;const prev=p.estado;p.estado=val;
+  try{await sbUpdate('pedidos',`id=eq.${id}`,{estado:val});}
+  catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();}
+}
 function verOC(id){const p=pedidos.find(x=>x.id==id);if(!p)return;
   const idx=pedidos.filter(x=>x.mes===p.mes).sort((a,b)=>a.id-b.id).findIndex(x=>x.id===p.id);
   const antes=pedidos.filter(x=>x.mes===p.mes).sort((a,b)=>a.id-b.id).slice(0,idx).reduce((s,x)=>s+x.items.reduce((a,i)=>a+i.totalKg,0),0);
@@ -697,7 +739,12 @@ function limpiar(){
 // INIT
 document.getElementById('hoy-lbl').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('fecha').value=hoy();
-load();fillOrigen();
+(async function init(){
+  document.body.style.opacity='.5';
+  await load();
+  fillOrigen();
+  document.body.style.opacity='1';
+})();
 </script>
 </body>
 </html>
