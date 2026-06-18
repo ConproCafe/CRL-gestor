@@ -163,7 +163,22 @@ textarea{resize:vertical;min-height:52px;}
   <div id="campo-com">
     <div class="field" style="margin-bottom:8px;">
       <div class="lbl">Nombre cliente <span style="font-weight:400;text-transform:none;font-size:9px;">(registro interno — no aparece en OC)</span></div>
-      <input type="text" id="cliente" placeholder="Ej: Bárbara Yañez"/>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="cliente" list="cliente-list" placeholder="Ej: Bárbara Yañez" style="flex:1;" oninput="resolveCliente()"/>
+        <button type="button" class="btn btn-sm" onclick="toggleNuevoClienteForm()" style="flex-shrink:0;">+ Nuevo</button>
+      </div>
+      <input type="hidden" id="cliente-id"/>
+      <div class="ph" id="cliente-match"></div>
+      <datalist id="cliente-list"></datalist>
+    </div>
+    <div id="nuevo-cliente-form" style="display:none;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;margin-bottom:8px;">
+      <div class="field-row">
+        <div class="field"><div class="lbl">Teléfono</div><input type="text" id="nc-tel" placeholder="+56 9 1234 5678"/></div>
+        <div class="field"><div class="lbl">Dirección</div><input type="text" id="nc-dir" placeholder="Opcional"/></div>
+      </div>
+      <button type="button" class="btn btn-sm btn-primary" onclick="crearClienteRapido()">Guardar cliente</button>
+      <button type="button" class="btn btn-sm" onclick="toggleNuevoClienteForm()">Cancelar</button>
+      <div id="nc-res" style="margin-top:6px;"></div>
     </div>
   </div>
   <div id="campo-caf" style="display:none;">
@@ -385,7 +400,7 @@ function denormCat(c){return{n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,ku:c.ku,gu:c.gu,p
 async function load(){
   try{
     const[peds,catRows,clis]=await Promise.all([sbSelect('pedidos','&order=created_at.asc'),sbSelect('catalogo','&order=n.asc'),sbSelect('clientes','&order=creado_en.asc')]);
-    pedidos=peds.map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:p.cliente,contacto:p.contacto||'',cafeNombre:p.cafe_nombre||'',cafeContacto:p.cafe_contacto||'',items:p.items||[],comision:p.comision||0,estado:p.estado||'pendiente',codigo:p.codigo||''}));
+    pedidos=peds.map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:p.cliente,clienteId:p.cliente_id||null,contacto:p.contacto||'',cafeNombre:p.cafe_nombre||'',cafeContacto:p.cafe_contacto||'',items:p.items||[],comision:p.comision||0,estado:p.estado||'pendiente',codigo:p.codigo||''}));
     cat=catRows.map(normCat);
     clientes=clis.map(c=>({id:c.id,nombre:c.nombre,tel:c.tel||'',dir:c.dir||'',notas:c.notas||'',creado:c.creado_en||''}));
   }catch(e){console.error('Error cargando Supabase',e);alert('No se pudo conectar a Supabase. Revisa tu conexión.');pedidos=[];cat=[];clientes=[];}
@@ -413,6 +428,42 @@ function fillOrigen(){
   const off=cat.filter(c=>!c.on);
   if(off.length){const g=document.createElement('optgroup');g.label='── Sin stock ──';off.forEach(c=>{const o=document.createElement('option');o.value=c.n;o.textContent=c.n+' (sin stock)';o.disabled=true;g.appendChild(o);});sel.appendChild(g);}
   if(val)sel.value=val;
+}
+
+function normTxt(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+function resolveCliente(){
+  const v=document.getElementById('cliente').value.trim();
+  const m=document.getElementById('cliente-match'),idF=document.getElementById('cliente-id');
+  if(!v){m.innerHTML='';idF.value='';return;}
+  const match=clientes.find(c=>normTxt(c.nombre)===normTxt(v));
+  if(match){idF.value=match.id;m.innerHTML=`<span style="color:#15803d;">✓ Cliente existente${match.tel?' · '+match.tel:''}</span>`;}
+  else{idF.value='';m.innerHTML=`<span style="color:#9ca3af;">Cliente nuevo (sin registrar en directorio)</span>`;}
+}
+function fillClienteList(){
+  const dl=document.getElementById('cliente-list');if(!dl)return;
+  dl.innerHTML=clientes.map(c=>`<option value="${c.nombre.replace(/"/g,'')}">`).join('');
+}
+function toggleNuevoClienteForm(){
+  const f=document.getElementById('nuevo-cliente-form');
+  f.style.display=f.style.display==='block'?'none':'block';
+  if(f.style.display==='block')document.getElementById('nc-tel').focus();
+}
+async function crearClienteRapido(){
+  const nombre=document.getElementById('cliente').value.trim();
+  const tel=document.getElementById('nc-tel').value.trim();
+  const dir=document.getElementById('nc-dir').value.trim();
+  const res=document.getElementById('nc-res');
+  if(!nombre){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Escribe el nombre en el campo de arriba primero.</div></div>';return;}
+  if(clientes.some(c=>normTxt(c.nombre)===normTxt(nombre))){res.innerHTML='<div class="alert al-warn"><div class="al-ic">◆</div><div>Ya existe un cliente con ese nombre.</div></div>';return;}
+  const id='cl_'+Date.now();
+  try{
+    await sbInsert('clientes',{id,nombre,tel,dir,notas:'',creado_en:hoy()});
+    clientes.push({id,nombre,tel,dir,notas:'',creado:hoy()});
+    fillClienteList();resolveCliente();
+    document.getElementById('nc-tel').value='';document.getElementById('nc-dir').value='';
+    res.innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div><strong>${nombre}</strong> guardado en el directorio.</div></div>`;
+    setTimeout(()=>{toggleNuevoClienteForm();res.innerHTML='';},1400);
+  }catch(e){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Error guardando en Supabase.</div></div>';}
 }
 
 function onCanalChange(){
@@ -513,12 +564,13 @@ async function savePedido(){
   const canal=document.getElementById('canal').value,fecha=document.getElementById('fecha').value||hoy(),mes=fecha.slice(0,7);
   const cli=canal==='comunidad'?document.getElementById('cliente').value.trim():document.getElementById('cafe-nombre').value;
   const con=canal==='cafeteria'?document.getElementById('cafe-contacto').value:'';
+  const clienteId=canal==='comunidad'?(document.getElementById('cliente-id').value||null):null;
   if(!cli){alert('Ingresa el nombre del cliente.');return;}if(!items.length){alert('Agrega ítems.');return;}
   const kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=calcCom(kp,kn);
-  const row={id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:'pendiente',cafe_nombre:canal==='cafeteria'?cli:'',cafe_contacto:con};
+  const row={id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:'pendiente',cafe_nombre:canal==='cafeteria'?cli:'',cafe_contacto:con,cliente_id:clienteId};
   try{
     await sbInsert('pedidos',row);
-    pedidos.push({id:row.id,fecha,mes,canal,cliente:cli,contacto:con,cafeNombre:row.cafe_nombre,cafeContacto:con,items:[...items],comision:com,estado:'pendiente',codigo:''});
+    pedidos.push({id:row.id,fecha,mes,canal,cliente:cli,clienteId,contacto:con,cafeNombre:row.cafe_nombre,cafeContacto:con,items:[...items],comision:com,estado:'pendiente',codigo:''});
   }catch(e){alert('Error guardando en Supabase. Revisa tu conexión.');return;}
   const kt=getKgMes(mes);
   let msg='✅ Pedido guardado.\nComisión estimada: $'+com.toLocaleString('es-CL');
@@ -628,8 +680,13 @@ async function addOrigen(){
 }
 
 // ── CLIENTES ──────────────────────────────────────────────────────────────────
-function buildPerfil(nombre){
-  const ps=pedidos.filter(p=>p.cliente===nombre&&p.canal==='comunidad');if(!ps.length)return null;
+function buildPerfil(key){
+  // key puede ser un clienteId (cl_...) o, para pedidos viejos sin id, el nombre exacto
+  const esId=key.startsWith('cl_');
+  const ps=pedidos.filter(p=>p.canal==='comunidad'&&(esId?p.clienteId===key:(!p.clienteId&&p.cliente===key)));
+  if(!ps.length)return null;
+  const nombre=esId?(clientes.find(c=>c.id===key)?.nombre||ps[0].cliente):key;
+  const cliInfo=esId?clientes.find(c=>c.id===key):null;
   const orig={},fmts={},meses=new Set();let tkg=0,tgasto=0;
   ps.forEach(p=>{meses.add(p.mes);p.items.forEach(i=>{orig[i.origen]=(orig[i.origen]||0)+i.totalKg;fmts[i.formato]=(fmts[i.formato]||0)+i.totalKg;tkg+=i.totalKg;tgasto+=i.totalP;});});
   let se=0,sc=0;
@@ -645,15 +702,19 @@ function buildPerfil(nombre){
   else{perfil='En descubrimiento';tc='pt-mixt';em='✨';desc2='Perfil en construcción.';}
   const fechas=ps.map(p=>p.fecha).sort(),ult=fechas[fechas.length-1];
   const dias=Math.floor((new Date()-new Date(ult+'T12:00:00'))/864e5);
-  return{nombre,npeds:ps.length,tkg,tgasto,meses:meses.size,orig,fmts,perfil,tc,em,desc:desc2,ult,dias,div};
+  return{key,nombre,tel:cliInfo?.tel||'',dir:cliInfo?.dir||'',npeds:ps.length,tkg,tgasto,meses:meses.size,orig,fmts,perfil,tc,em,desc:desc2,ult,dias,div};
 }
-function getAllCl(){const ns=new Set(pedidos.filter(p=>p.canal==='comunidad').map(p=>p.cliente));return[...ns].map(n=>buildPerfil(n)).filter(Boolean).sort((a,b)=>b.tkg-a.tkg);}
+function getAllCl(){
+  const keys=new Set();
+  pedidos.filter(p=>p.canal==='comunidad').forEach(p=>keys.add(p.clienteId||p.cliente));
+  return[...keys].map(k=>buildPerfil(k)).filter(Boolean).sort((a,b)=>b.tkg-a.tkg);
+}
 function renderClientes(){
   const cl=getAllCl(),el=document.getElementById('cl-grid'),kpi=document.getElementById('cl-kpi');
   if(!cl.length){el.innerHTML='<div class="empty" style="grid-column:1/-1;">Sin clientes registrados aún.</div>';kpi.innerHTML='';return;}
   const rec=cl.filter(c=>c.npeds>=2).length,expl=cl.filter(c=>c.tc==='pt-atrv'||c.tc==='pt-expl').length;
   kpi.innerHTML=`<div class="kpi"><div class="kpi-lb">Clientes únicos</div><div class="kpi-vl">${cl.length}</div></div><div class="kpi"><div class="kpi-lb">Recurrentes</div><div class="kpi-vl">${rec}</div></div><div class="kpi"><div class="kpi-lb">Exploradores</div><div class="kpi-vl">${expl}</div></div>`;
-  el.innerHTML=cl.map(c=>{const top=Object.entries(c.orig).sort((a,b)=>b[1]-a[1])[0];return`<div class="clcard" onclick="openModal('${c.nombre.replace(/'/g,"\\'")}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div class="cl-name">${c.em} ${c.nombre}</div><div class="cl-meta">${c.npeds} pedido${c.npeds>1?'s':''} · ${c.tkg.toFixed(2)} kg</div></div>${c.npeds>=2?'<span class="badge bd-green">Recurrente</span>':''}</div><span class="ptag ${c.tc}">${c.perfil}</span><div class="mbar"><div class="mbar-f" style="width:${top?Math.round(top[1]/c.tkg*100):0}%;background:${COLORS[top?.[0]]||'#888'};"></div></div><div style="font-size:10px;color:#9ca3af;margin-top:3px;">${top?.[0]||'—'}</div></div>`;}).join('');
+  el.innerHTML=cl.map(c=>{const top=Object.entries(c.orig).sort((a,b)=>b[1]-a[1])[0];return`<div class="clcard" onclick="openModal('${c.key.replace(/'/g,"\\'")}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div class="cl-name">${c.em} ${c.nombre}</div><div class="cl-meta">${c.npeds} pedido${c.npeds>1?'s':''} · ${c.tkg.toFixed(2)} kg${c.tel?' · '+c.tel:''}</div></div>${c.npeds>=2?'<span class="badge bd-green">Recurrente</span>':''}</div><span class="ptag ${c.tc}">${c.perfil}</span><div class="mbar"><div class="mbar-f" style="width:${top?Math.round(top[1]/c.tkg*100):0}%;background:${COLORS[top?.[0]]||'#888'};"></div></div><div style="font-size:10px;color:#9ca3af;margin-top:3px;">${top?.[0]||'—'}</div></div>`;}).join('');
   renderDirectorio();
 }
 function renderDirectorio(){
@@ -697,20 +758,24 @@ async function addCliente(){
   const notas=document.getElementById('dc-notas').value.trim();
   const res=document.getElementById('dc-res');
   if(!nombre){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Ingresa el nombre.</div></div>';return;}
+  if(clientes.some(c=>normTxt(c.nombre)===normTxt(nombre))){res.innerHTML='<div class="alert al-warn"><div class="al-ic">◆</div><div>Ya existe un cliente con ese nombre.</div></div>';return;}
   const id='cl_'+Date.now();
   try{
     await sbInsert('clientes',{id,nombre,tel,dir,notas,creado_en:hoy()});
     clientes.push({id,nombre,tel,dir,notas,creado:hoy()});
     ['dc-nombre','dc-tel','dc-dir','dc-notas'].forEach(x=>document.getElementById(x).value='');
     res.innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div><strong>${nombre}</strong> agregado al directorio.</div></div>`;
-    renderDirectorio();setTimeout(()=>res.innerHTML='',3000);
+    renderDirectorio();fillClienteList();setTimeout(()=>res.innerHTML='',3000);
   }catch(e){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Error guardando en Supabase.</div></div>';}
 }
-function openModal(nombre){
-  const c=buildPerfil(nombre);if(!c)return;
+function openModal(key){
+  const c=buildPerfil(key);if(!c)return;
   document.getElementById('m-nombre').textContent=`${c.em} ${c.nombre}`;
   const to=Object.entries(c.orig).sort((a,b)=>b[1]-a[1]),tf=Object.entries(c.fmts).sort((a,b)=>b[1]-a[1]);
+  const esId=key.startsWith('cl_');
+  const histPeds=pedidos.filter(p=>p.canal==='comunidad'&&(esId?p.clienteId===key:(!p.clienteId&&p.cliente===key)));
   document.getElementById('m-content').innerHTML=`
+    ${c.tel||c.dir?`<div style="font-size:11px;color:#6b7280;margin-bottom:8px;">${c.tel?'📞 '+c.tel:''}${c.tel&&c.dir?' · ':''}${c.dir?'📍 '+c.dir:''}</div>`:''}
     <div class="srow3"><div class="st"><div class="stv">${c.npeds}</div><div class="stl">Pedidos</div></div><div class="st"><div class="stv">${c.tkg.toFixed(1)}kg</div><div class="stl">Total</div></div><div class="st"><div class="stv">${c.div}</div><div class="stl">Orígenes</div></div></div>
     <div class="srow3"><div class="st"><div class="stv">$${Math.round(c.tgasto/1000)}K</div><div class="stl">Gasto</div></div><div class="st"><div class="stv">$${Math.round(c.tgasto/c.npeds/1000)}K</div><div class="stl">Ticket prom.</div></div><div class="st"><div class="stv">${c.meses}</div><div class="stl">Meses</div></div></div>
     <div class="pbox">${c.em} <strong>${c.perfil}</strong><br>${c.desc}</div>
@@ -721,7 +786,7 @@ function openModal(nombre){
     <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;margin:9px 0 5px;">Formatos</div>
     <div style="margin-bottom:10px;">${tf.map(([f,k])=>`<span class="fc">${f} ${k.toFixed(2)}kg</span>`).join('')}</div>
     <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;margin-bottom:7px;">Historial</div>
-    ${pedidos.filter(p=>p.cliente===nombre&&p.canal==='comunidad').sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0);return`<div class="hi">${p.fecha} · ${kp.toFixed(2)} kg · $${mp.toLocaleString('es-CL')}<br><span>${p.items.map(i=>i.origen+' '+i.label).join(' · ')}</span></div>`;}).join('')}
+    ${histPeds.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0);return`<div class="hi">${p.fecha} · ${kp.toFixed(2)} kg · $${mp.toLocaleString('es-CL')}<br><span>${p.items.map(i=>i.origen+' '+i.label).join(' · ')}</span></div>`;}).join('')}
     <div style="font-size:10px;color:#9ca3af;margin-top:8px;">Última: ${c.ult} (hace ${c.dias} días)</div>`;
   document.getElementById('ov').style.display='flex';
 }
@@ -797,6 +862,7 @@ function renderHist(){
 function limpiar(){
   items=[];
   ['cliente','cafe-contacto'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('cliente-id').value='';document.getElementById('cliente-match').innerHTML='';
   document.getElementById('origen').value='';document.getElementById('cantidad').value='1';
   document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));
   document.querySelector('[data-u="kg"]').classList.add('active');uAct='kg';
@@ -811,7 +877,7 @@ document.getElementById('fecha').value=hoy();
 (async function init(){
   document.body.style.opacity='.5';
   await load();
-  fillOrigen();
+  fillOrigen();fillClienteList();
   document.body.style.opacity='1';
 })();
 </script>
