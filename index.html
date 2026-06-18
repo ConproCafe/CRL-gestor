@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">v.supabase-sync</div>
+  <div style="font-size:9px;opacity:.4;">v.balde6-fix-3</div>
 </div>
 
 <div class="container">
@@ -300,6 +300,24 @@ textarea{resize:vertical;min-height:52px;}
 </div>
 <div class="sep"></div>
 <div id="cl-grid" class="clgrid"></div>
+<div class="sep"></div>
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div class="section-title" style="margin:0;">📇 Directorio de clientes</div>
+    <span style="font-size:11px;color:#6b7280;" id="dir-count"></span>
+  </div>
+  <div id="dir-list" style="margin-bottom:14px;"></div>
+  <div class="sep"></div>
+  <div style="font-size:12px;font-weight:600;margin-bottom:10px;">➕ Agregar cliente nuevo</div>
+  <div class="field-row">
+    <div class="field"><div class="lbl">Nombre</div><input type="text" id="dc-nombre" placeholder="Ej: Bárbara Yáñez"/></div>
+    <div class="field"><div class="lbl">Teléfono</div><input type="text" id="dc-tel" placeholder="+56 9 1234 5678"/></div>
+  </div>
+  <div class="field" style="margin-bottom:8px;"><div class="lbl">Dirección</div><input type="text" id="dc-dir" placeholder="Opcional"/></div>
+  <div class="field" style="margin-bottom:10px;"><div class="lbl">Notas</div><textarea id="dc-notas" placeholder="Opcional"></textarea></div>
+  <button class="btn btn-primary" onclick="addCliente()">Agregar cliente</button>
+  <div id="dc-res" style="margin-top:8px;"></div>
+</div>
 </div>
 
 <!-- HISTORIAL -->
@@ -636,6 +654,57 @@ function renderClientes(){
   const rec=cl.filter(c=>c.npeds>=2).length,expl=cl.filter(c=>c.tc==='pt-atrv'||c.tc==='pt-expl').length;
   kpi.innerHTML=`<div class="kpi"><div class="kpi-lb">Clientes únicos</div><div class="kpi-vl">${cl.length}</div></div><div class="kpi"><div class="kpi-lb">Recurrentes</div><div class="kpi-vl">${rec}</div></div><div class="kpi"><div class="kpi-lb">Exploradores</div><div class="kpi-vl">${expl}</div></div>`;
   el.innerHTML=cl.map(c=>{const top=Object.entries(c.orig).sort((a,b)=>b[1]-a[1])[0];return`<div class="clcard" onclick="openModal('${c.nombre.replace(/'/g,"\\'")}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div class="cl-name">${c.em} ${c.nombre}</div><div class="cl-meta">${c.npeds} pedido${c.npeds>1?'s':''} · ${c.tkg.toFixed(2)} kg</div></div>${c.npeds>=2?'<span class="badge bd-green">Recurrente</span>':''}</div><span class="ptag ${c.tc}">${c.perfil}</span><div class="mbar"><div class="mbar-f" style="width:${top?Math.round(top[1]/c.tkg*100):0}%;background:${COLORS[top?.[0]]||'#888'};"></div></div><div style="font-size:10px;color:#9ca3af;margin-top:3px;">${top?.[0]||'—'}</div></div>`;}).join('');
+  renderDirectorio();
+}
+function renderDirectorio(){
+  const el=document.getElementById('dir-list');if(!el)return;
+  document.getElementById('dir-count').textContent=clientes.length+' registrados';
+  if(!clientes.length){el.innerHTML='<div class="empty">Sin clientes en el directorio.</div>';return;}
+  el.innerHTML=[...clientes].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(c=>`
+    <div class="item-row" style="align-items:flex-start;">
+      <div style="flex:1;min-width:140px;">
+        <div class="item-name">${c.nombre}</div>
+        <div class="idet" id="dir-view-${c.id}">${c.tel||'<span style="color:#d1d5db;">sin teléfono</span>'}${c.dir?' · '+c.dir:''}</div>
+      </div>
+      <button class="btn btn-sm" onclick="toggleEditCliente('${c.id}')" id="dir-btn-${c.id}">Editar</button>
+    </div>
+    <div id="dir-edit-${c.id}" style="display:none;padding:8px 10px;background:#f3f4f6;border-radius:6px;margin:-3px 0 5px;">
+      <div class="field-row">
+        <div class="field"><div class="lbl">Teléfono</div><input type="text" id="dc-tel-${c.id}" value="${c.tel||''}"/></div>
+        <div class="field"><div class="lbl">Dirección</div><input type="text" id="dc-dir-${c.id}" value="${c.dir||''}"/></div>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="saveCliente('${c.id}')">Guardar</button>
+      <button class="btn btn-sm" onclick="toggleEditCliente('${c.id}')">Cancelar</button>
+    </div>`).join('');
+}
+function toggleEditCliente(id){
+  const ed=document.getElementById('dir-edit-'+id),vw=document.getElementById('dir-view-'+id),bt=document.getElementById('dir-btn-'+id);
+  const open=ed.style.display==='block';
+  ed.style.display=open?'none':'block';vw.style.display=open?'block':'none';bt.style.display=open?'inline-block':'none';
+}
+async function saveCliente(id){
+  const tel=document.getElementById('dc-tel-'+id).value.trim(),dir=document.getElementById('dc-dir-'+id).value.trim();
+  try{
+    await sbUpdate('clientes',`id=eq.${id}`,{tel,dir});
+    const c=clientes.find(x=>x.id===id);if(c){c.tel=tel;c.dir=dir;}
+    renderDirectorio();
+  }catch(e){alert('Error guardando en Supabase.');}
+}
+async function addCliente(){
+  const nombre=document.getElementById('dc-nombre').value.trim();
+  const tel=document.getElementById('dc-tel').value.trim();
+  const dir=document.getElementById('dc-dir').value.trim();
+  const notas=document.getElementById('dc-notas').value.trim();
+  const res=document.getElementById('dc-res');
+  if(!nombre){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Ingresa el nombre.</div></div>';return;}
+  const id='cl_'+Date.now();
+  try{
+    await sbInsert('clientes',{id,nombre,tel,dir,notas,creado_en:hoy()});
+    clientes.push({id,nombre,tel,dir,notas,creado:hoy()});
+    ['dc-nombre','dc-tel','dc-dir','dc-notas'].forEach(x=>document.getElementById(x).value='');
+    res.innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div><strong>${nombre}</strong> agregado al directorio.</div></div>`;
+    renderDirectorio();setTimeout(()=>res.innerHTML='',3000);
+  }catch(e){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Error guardando en Supabase.</div></div>';}
 }
 function openModal(nombre){
   const c=buildPerfil(nombre);if(!c)return;
