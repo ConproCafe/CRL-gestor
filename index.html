@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">v.balde6-fix-3</div>
+  <div style="font-size:9px;opacity:.4;">V1-10</div>
 </div>
 
 <div class="container">
@@ -246,8 +246,16 @@ textarea{resize:vertical;min-height:52px;}
 <div id="doc-sec" style="display:none;">
 <div class="card">
   <div class="section-title">Orden de compra — Vista previa</div>
+  <div id="doc-edit-box" style="display:none;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;margin-bottom:10px;">
+    <div class="field-row">
+      <div class="field"><div class="lbl">Cliente</div><input type="text" id="ed-cliente"/></div>
+      <div class="field"><div class="lbl">Fecha</div><input type="date" id="ed-fecha"/></div>
+    </div>
+    <button class="btn btn-sm btn-primary" onclick="guardarEdicionPedido()">Guardar cambios</button>
+  </div>
   <div class="doc-pre" id="doc-pre"></div>
   <div style="display:flex;gap:7px;flex-wrap:wrap;">
+    <button class="btn" id="btn-toggle-edit" onclick="toggleEditOC()" style="display:none;">✏️ Editar pedido</button>
     <button class="btn btn-primary" onclick="uploadDrive()"><span id="dspin" style="display:none;" class="spin"></span>Guardar en Google Drive</button>
     <button class="btn" onclick="copyDoc()">Copiar texto (WhatsApp)</button>
   </div>
@@ -602,11 +610,13 @@ function genDoc(p){
 
 function previewDoc(){
   if(!items.length){alert('Agrega ítems primero.');return;}
+  pedidoEnEdicion=null;
   const canal=document.getElementById('canal').value,fecha=document.getElementById('fecha').value||hoy();
   const cli=canal==='comunidad'?document.getElementById('cliente').value:document.getElementById('cafe-nombre').value;
   const mes=fecha.slice(0,7),kprev=getKgMes(mes);
   document.getElementById('doc-pre').textContent=genDoc({id:'p',fecha,canal,cliente:cli,items:[...items],_kprev:kprev});
   document.getElementById('doc-sec').style.display='block';document.getElementById('drive-res').innerHTML='';
+  document.getElementById('btn-toggle-edit').style.display='none';document.getElementById('doc-edit-box').style.display='none';
   document.getElementById('doc-sec').scrollIntoView({behavior:'smooth'});
 }
 
@@ -736,6 +746,7 @@ function renderDirectorio(){
       </div>
       <button class="btn btn-sm btn-primary" onclick="saveCliente('${c.id}')">Guardar</button>
       <button class="btn btn-sm" onclick="toggleEditCliente('${c.id}')">Cancelar</button>
+      <button class="btn btn-sm btn-danger" onclick="delCliente('${c.id}','${c.nombre.replace(/'/g,"\\'")}')">Eliminar</button>
     </div>`).join('');
 }
 function toggleEditCliente(id){
@@ -750,6 +761,14 @@ async function saveCliente(id){
     const c=clientes.find(x=>x.id===id);if(c){c.tel=tel;c.dir=dir;}
     renderDirectorio();
   }catch(e){alert('Error guardando en Supabase.');}
+}
+async function delCliente(id,nombre){
+  if(!confirm(`¿Eliminar a "${nombre}" del directorio? Los pedidos ya guardados con este cliente no se modifican.`))return;
+  try{
+    await sbDelete('clientes',`id=eq.${id}`);
+    clientes=clientes.filter(x=>x.id!==id);
+    fillClienteList();renderDirectorio();
+  }catch(e){alert('Error eliminando en Supabase. ¿Tienes permiso de DELETE habilitado en RLS?');}
 }
 async function addCliente(){
   const nombre=document.getElementById('dc-nombre').value.trim();
@@ -843,20 +862,74 @@ async function cambiarEstado(id,val){
   try{await sbUpdate('pedidos',`id=eq.${id}`,{estado:val});}
   catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();}
 }
+let pedidoEnEdicion=null;
 function verOC(id){const p=pedidos.find(x=>x.id==id);if(!p)return;
   const idx=pedidos.filter(x=>x.mes===p.mes).sort((a,b)=>a.id-b.id).findIndex(x=>x.id===p.id);
   const antes=pedidos.filter(x=>x.mes===p.mes).sort((a,b)=>a.id-b.id).slice(0,idx).reduce((s,x)=>s+x.items.reduce((a,i)=>a+i.totalKg,0),0);
-  p._kprev=antes;
-  document.querySelectorAll('.tab')[0].click();setTimeout(()=>{document.getElementById('doc-pre').textContent=genDoc(p);document.getElementById('doc-sec').style.display='block';document.getElementById('drive-res').innerHTML='';},100);}
+  p._kprev=antes;pedidoEnEdicion=p;
+  document.querySelectorAll('.tab')[0].click();setTimeout(()=>{
+    document.getElementById('doc-pre').textContent=genDoc(p);document.getElementById('doc-sec').style.display='block';document.getElementById('drive-res').innerHTML='';
+    document.getElementById('btn-toggle-edit').style.display='inline-block';
+    document.getElementById('doc-edit-box').style.display='none';
+  },100);}
+function toggleEditOC(){
+  if(!pedidoEnEdicion)return;
+  const box=document.getElementById('doc-edit-box');
+  const open=box.style.display==='block';
+  if(!open){document.getElementById('ed-cliente').value=pedidoEnEdicion.cliente;document.getElementById('ed-fecha').value=pedidoEnEdicion.fecha;}
+  box.style.display=open?'none':'block';
+}
+async function guardarEdicionPedido(){
+  if(!pedidoEnEdicion)return;
+  const cliente=document.getElementById('ed-cliente').value.trim(),fecha=document.getElementById('ed-fecha').value;
+  if(!cliente||!fecha){alert('Completa cliente y fecha.');return;}
+  const mes=fecha.slice(0,7);
+  try{
+    await sbUpdate('pedidos',`id=eq.${pedidoEnEdicion.id}`,{cliente,fecha,mes});
+    pedidoEnEdicion.cliente=cliente;pedidoEnEdicion.fecha=fecha;pedidoEnEdicion.mes=mes;
+    document.getElementById('doc-pre').textContent=genDoc(pedidoEnEdicion);
+    document.getElementById('doc-edit-box').style.display='none';
+    alert('✓ Pedido actualizado.');
+  }catch(e){alert('Error guardando en Supabase.');}
+}
 
 function renderHist(){
   const pm={};pedidos.forEach(p=>{if(!pm[p.mes])pm[p.mes]=[];pm[p.mes].push(p);});
   const el=document.getElementById('hist-content');
   if(!pedidos.length){el.innerHTML='<div class="empty">Sin pedidos registrados.</div>';return;}
+  const ESTL={pendiente:'🟡',entregado:'🚚',pagado:'✅',finalizado:'⬛'};
   el.innerHTML=Object.entries(pm).sort((a,b)=>b[0].localeCompare(a[0])).map(([mes,ps])=>{
     const kg=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0),m=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0)+(p.canal==='cafeteria'?3500:0),0),com=ps.reduce((s,p)=>s+(p.comision||0),0);
-    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:13px;font-weight:500;">${mes}</div><div style="font-size:11px;color:#6b7280;">${ps.length} pedidos · ${kg.toFixed(2)} kg · $${Math.round(m/1000)}K · Comisión $${com.toLocaleString('es-CL')}</div></div></div></div>`;
+    const filas=ps.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
+      const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);
+      return`<div class="hi" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">${ESTL[p.estado]||'🟡'} ${p.fecha} · ${p.cliente} · ${kp.toFixed(2)}kg · $${mp.toLocaleString('es-CL')}</div>
+        <div style="display:flex;gap:5px;flex-shrink:0;">
+          <button class="btn btn-sm" onclick="verOC('${p.id}')">Ver/Editar OC</button>
+          <button class="btn btn-sm btn-danger" onclick="delPedido('${p.id}','${mes}')">Eliminar</button>
+        </div></div>`;
+    }).join('');
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleMes('${mes}')">
+        <div><div style="font-size:13px;font-weight:500;">${mes}</div><div style="font-size:11px;color:#6b7280;">${ps.length} pedidos · ${kg.toFixed(2)} kg · $${Math.round(m/1000)}K · Comisión $${com.toLocaleString('es-CL')}</div></div>
+        <span id="mes-arrow-${mes}" style="font-size:11px;color:#9ca3af;">▾ ver</span>
+      </div>
+      <div id="mes-detalle-${mes}" style="display:none;margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">${filas}</div>
+    </div>`;
   }).join('');
+}
+function toggleMes(mes){
+  const d=document.getElementById('mes-detalle-'+mes),a=document.getElementById('mes-arrow-'+mes);
+  const open=d.style.display==='block';d.style.display=open?'none':'block';a.textContent=open?'▾ ver':'▴ ocultar';
+}
+async function delPedido(id,mes){
+  const p=pedidos.find(x=>x.id==id);if(!p)return;
+  if(!confirm(`¿Eliminar el pedido de ${p.cliente} (${p.fecha})? Esta acción no se puede deshacer.`))return;
+  try{
+    await sbDelete('pedidos',`id=eq.${id}`);
+    pedidos=pedidos.filter(x=>x.id!=id);
+    renderHist();
+  }catch(e){alert('Error eliminando en Supabase.');}
 }
 
 function limpiar(){
