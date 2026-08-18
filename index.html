@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-10</div>
+  <div style="font-size:9px;opacity:.4;">V1-12</div>
 </div>
 
 <div class="container">
@@ -149,6 +149,19 @@ textarea{resize:vertical;min-height:52px;}
 
 <!-- NUEVO PEDIDO -->
 <div id="panel-nuevo" class="panel active">
+<div class="card">
+  <div class="section-title">📋 Importar pedido desde WhatsApp</div>
+  <div class="field" style="margin-bottom:10px;">
+    <textarea id="wsp-text" rows="8" placeholder="Pega aquí el texto del pedido tal como lo manejas en WhatsApp (con los distintos clientes, café, presentación y precio)..."></textarea>
+  </div>
+  <button class="btn btn-primary" onclick="analizarWsp()">Analizar texto</button>
+  <div id="wsp-preview" style="margin-top:12px;"></div>
+  <div id="wsp-guardar-wrap" style="display:none;gap:7px;flex-wrap:wrap;margin-top:10px;">
+    <button class="btn btn-primary" onclick="confirmarImportWsp()">💾 Guardar pedidos importados</button>
+    <button class="btn" onclick="cancelarImportWsp()">Cancelar</button>
+  </div>
+  <div id="wsp-res" style="margin-top:8px;"></div>
+</div>
 <div class="card">
   <div class="section-title">Datos del pedido</div>
   <div class="field-row">
@@ -213,6 +226,7 @@ textarea{resize:vertical;min-height:52px;}
       <button class="upill active" data-u="kg" onclick="selU(this)">1 kg</button>
       <button class="upill upill-p" data-u="2x500" onclick="selU(this)">2×500 gr <span style="font-size:9px;opacity:.8;">+$700</span></button>
       <button class="upill" data-u="250g" onclick="selU(this)">250 gr</button>
+      <button class="upill upill-p" data-u="250gp" onclick="selU(this)">250 gr Premium <span style="font-size:9px;opacity:.8;">+$1.000</span></button>
     </div>
     <div class="ph" id="ph"></div>
   </div>
@@ -362,7 +376,7 @@ textarea{resize:vertical;min-height:52px;}
 
 <script>
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
-const CU=25, CB=1500, CA=2000, EMP=700;
+const CU=25, CB=1500, CA=2000, EMP=700, EMPP=1000;
 
 // Catálogo base actualizado desde planilla Drive (mayo 2026)
 const CAT_BASE=[
@@ -483,7 +497,7 @@ function onCanalChange(){
 function selU(el){
   document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));el.classList.add('active');uAct=el.dataset.u;
   const lb=document.getElementById('cant-lbl');
-  lb.textContent=uAct==='kg'?'(nº de kilos)':uAct==='2x500'?'(nº de paquetes dobles)':uAct==='balde6'?'(nº de baldes de 6 kg)':'(nº de fracciones 250gr)';
+  lb.textContent=uAct==='kg'?'(nº de kilos)':uAct==='2x500'?'(nº de paquetes dobles)':uAct==='balde6'?'(nº de baldes de 6 kg)':uAct==='250gp'?'(nº de envases premium 250gr)':'(nº de fracciones 250gr)';
   updHint();updRI();
 }
 
@@ -492,13 +506,14 @@ function getPU(){
   if(c.bkg){return{precio:c.km,pesoKg:c.bkg,label:`Balde ${c.bkg} kg`,emp:0,unit:c.ku||c.km};}
   if(uAct==='kg')return{precio:c.km,pesoKg:1,label:'1 kg',emp:0,unit:c.ku};
   if(uAct==='2x500')return{precio:c.km+EMP,pesoKg:1,label:'2×500 gr',emp:EMP,unit:c.ku+EMP};
+  if(uAct==='250gp')return{precio:c.gm+EMPP,pesoKg:.25,label:'250 gr Premium',emp:EMPP,unit:c.gu+EMPP};
   return{precio:c.gm,pesoKg:.25,label:'250 gr',emp:0,unit:c.gu};
 }
 
 function onOrigenChange(){
   const c=getCat(document.getElementById('origen').value);
   document.getElementById('upills').style.display=c&&c.bkg?'none':'flex';
-  document.getElementById('cant-lbl').textContent=c&&c.bkg?'(nº de baldes)':uAct==='kg'?'(nº de kilos)':uAct==='2x500'?'(nº de paquetes dobles)':'(nº de fracciones 250gr)';
+  document.getElementById('cant-lbl').textContent=c&&c.bkg?'(nº de baldes)':uAct==='kg'?'(nº de kilos)':uAct==='2x500'?'(nº de paquetes dobles)':uAct==='250gp'?'(nº de envases premium 250gr)':'(nº de fracciones 250gr)';
   updHint();updRI();
 }
 
@@ -510,6 +525,7 @@ function updHint(){
   const d=uAct==='kg'?desc(c.ku,c.km):uAct==='250g'?desc(c.gu,c.gm):null;
   const dt=d?` <span style="color:#15803d;font-size:9px;">−${d}% vs precio normal</span>`:'';
   if(uAct==='2x500')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} <span style="color:#6d28d9;font-size:9px;">(kg $${c.km.toLocaleString('es-CL')} + $${EMP} empaque)</span>`;
+  else if(uAct==='250gp')ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} <span style="color:#6d28d9;font-size:9px;">(250gr $${c.gm.toLocaleString('es-CL')} + $${EMPP} envase Premium)</span>`;
   else ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')}/u · Normal: $${pu.unit.toLocaleString('es-CL')}${dt}`;
 }
 
@@ -521,7 +537,7 @@ function updRI(){
   if(!n){el.style.display='none';return;}
   const pu=getPU();if(!pu){el.style.display='none';return;}
   const tp=pu.precio*q,tk=pu.pesoKg*q;
-  let ex=uAct==='2x500'?` <span style="color:#6d28d9;font-size:10px;">(incl. $${(EMP*q).toLocaleString('es-CL')} empaque)</span>`:'';
+  let ex=uAct==='2x500'?` <span style="color:#6d28d9;font-size:10px;">(incl. $${(EMP*q).toLocaleString('es-CL')} empaque)</span>`:uAct==='250gp'?` <span style="color:#6d28d9;font-size:10px;">(incl. $${(EMPP*q).toLocaleString('es-CL')} envase Premium)</span>`:'';
   tx.innerHTML=`<strong>${q}× ${pu.label} de ${n}</strong> · <strong>${tk.toFixed(2)} kg</strong> · <strong>$${tp.toLocaleString('es-CL')}</strong>${ex}`;
   el.style.display='flex';
 }
@@ -588,13 +604,16 @@ async function savePedido(){
 
 function genDoc(p){
   const sub=p.items.reduce((s,i)=>s+i.totalP,0),del=p.canal==='cafeteria'?3500:0;
-  const tkg=p.items.reduce((s,i)=>s+i.totalKg,0),temp=p.items.reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
+  const tkg=p.items.reduce((s,i)=>s+i.totalKg,0);
+  const temp=p.items.filter(i=>i.unidad==='2x500').reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
+  const tempp=p.items.filter(i=>i.unidad==='250gp').reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
   const fd=p.fecha?new Date(p.fecha+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'}):'';
   let t=`ORDEN DE COMPRA — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nRicardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\n${'─'.repeat(56)}\nFecha:  ${fd}\nCanal:  ${p.canal==='comunidad'?'Comunidad WhatsApp':'Cafetería B2B'}\n${'─'.repeat(56)}\nDETALLE\n\n`;
   t+=`Origen           Molienda        Cant  Present.       P/unit       Total\n${'─'.repeat(68)}\n`;
-  p.items.forEach(it=>{t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(it.precioU.toLocaleString('es-CL')).padEnd(12)} $${it.totalP.toLocaleString('es-CL')}${it.unidad==='2x500'?' *':''}\n`;});
+  p.items.forEach(it=>{const mk=it.unidad==='2x500'?' *':it.unidad==='250gp'?' †':'';t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(it.precioU.toLocaleString('es-CL')).padEnd(12)} $${it.totalP.toLocaleString('es-CL')}${mk}\n`;});
   t+=`${'─'.repeat(68)}\n`;
   if(temp)t+=`* 2×500gr: cargo empaque doble $${EMP}/kg · Total empaque: $${temp.toLocaleString('es-CL')}\n`;
+  if(tempp)t+=`† 250gr Premium: cargo envase Premium $${EMPP}/u · Total envase Premium: $${tempp.toLocaleString('es-CL')}\n`;
   t+=`Total kg: ${tkg.toFixed(2)} kg\nSubtotal: $${sub.toLocaleString('es-CL')}\n`;
   if(del)t+=`Delivery: $3.500\n`;
   t+=`TOTAL: $${(sub+del).toLocaleString('es-CL')} (IVA incl.)\n`;
@@ -633,6 +652,169 @@ async function uploadDrive(){
   sp.style.display='none';sp.parentElement.disabled=false;
 }
 function copyDoc(){navigator.clipboard.writeText(document.getElementById('doc-pre').textContent).then(()=>alert('✓ Copiado. Pega directamente en WhatsApp.'));}
+
+// ── IMPORTAR DESDE WHATSAPP ─────────────────────────────────────────────────────
+function tokens(s){return normTxt(s).split(/[^a-z0-9]+/).filter(Boolean);}
+
+function parseWhatsApp(txt){
+  let fechaPedido=hoy();
+  const mFecha=txt.match(/Pedido\s+\w+\s+(\d{1,2})\/(\d{1,2})/i);
+  if(mFecha){
+    const d=parseInt(mFecha[1]),m=parseInt(mFecha[2]),y=new Date().getFullYear();
+    fechaPedido=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  const blocks=txt.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  const clientBlocks=blocks.filter(b=>!/^Pedido\s/i.test(b)&&!/^Entrega\s/i.test(b));
+  const out=[];
+  clientBlocks.forEach(b=>{
+    const bl=b.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(bl.length<3)return;
+    const nombre=bl[0].replace(/^[•\-\*]\s*/,'').trim();
+    const prodLine=bl[1];
+    const precioLine=bl.find(l=>/\$/.test(l))||'';
+    const precio=parseInt((precioLine.match(/\$\s*([\d.]+)/)||[])[1]?.replace(/\./g,'')||'0',10);
+    let origenParte=prodLine,moliendaTxt='';
+    const dashIdx=prodLine.lastIndexOf(' - ');
+    if(dashIdx>-1){origenParte=prodLine.slice(0,dashIdx);moliendaTxt=prodLine.slice(dashIdx+3);}
+    let origenTxt=origenParte.trim(),cantidad=1,unidad='kg';
+    const xMatch=origenParte.match(/^(.*?)\s+x\s+(\d+)\s*(2\s*[x×]\s*500\s*gr?|kgs?|k\b|250\s*gr?|grs?|g\b)/i);
+    if(xMatch){
+      origenTxt=xMatch[1].trim();cantidad=parseInt(xMatch[2],10);
+      const u=xMatch[3].toLowerCase();
+      if(/2\s*[x×]\s*500/.test(u))unidad='2x500';
+      else if(/kg|k\b/.test(u))unidad='kg';
+      else unidad='250g';
+    }
+    if(unidad==='250g'&&/premium/i.test(prodLine))unidad='250gp';
+    if(!nombre||!origenTxt)return;
+    out.push({nombre,origenTxt,moliendaTxt:moliendaTxt.trim(),cantidad,unidad,precio});
+  });
+  return{fechaPedido,items:out};
+}
+
+function matchOrigen(origenTxt,precio,unidad){
+  const words=tokens(origenTxt);
+  let best=null,bestScore=0;
+  cat.forEach(c=>{
+    const cWords=tokens(c.n+' '+(c.v||''));
+    const score=words.filter(w=>cWords.includes(w)).length;
+    if(score>bestScore){bestScore=score;best=c;}
+  });
+  const priceMatches=cat.filter(c=>{
+    if(c.bkg)return c.km===precio;
+    const p=unidad==='kg'?c.km:unidad==='2x500'?c.km+EMP:unidad==='250gp'?c.gm+EMPP:c.gm;
+    return p===precio;
+  });
+  if(priceMatches.length===1)return{match:priceMatches[0],confidence:(best===priceMatches[0]||bestScore>0)?'alta':'media'};
+  if(best)return{match:best,confidence:priceMatches.includes(best)?'alta':'media'};
+  return{match:cat.find(c=>c.on)||cat[0]||null,confidence:'baja'};
+}
+
+function matchFormato(txt){
+  const n=normTxt(txt);
+  if(n.includes('espresso'))return'Espresso';
+  if(n.includes('frances'))return'Francesa';
+  if(n.includes('italian'))return'Italiana';
+  if(n.includes('filtrad'))return'Filtrado';
+  return'Grano';
+}
+
+function calcItemFromCat(c,unidad,cantidad){
+  if(c.bkg)return{precioU:c.km,pesoKg:c.bkg*cantidad,totalP:c.km*cantidad,label:`Balde ${c.bkg} kg`,emp:0};
+  if(unidad==='2x500')return{precioU:c.km+EMP,pesoKg:1*cantidad,totalP:(c.km+EMP)*cantidad,label:'2×500 gr',emp:EMP};
+  if(unidad==='250gp')return{precioU:c.gm+EMPP,pesoKg:.25*cantidad,totalP:(c.gm+EMPP)*cantidad,label:'250 gr Premium',emp:EMPP};
+  if(unidad==='250g')return{precioU:c.gm,pesoKg:.25*cantidad,totalP:c.gm*cantidad,label:'250 gr',emp:0};
+  return{precioU:c.km,pesoKg:1*cantidad,totalP:c.km*cantidad,label:'1 kg',emp:0};
+}
+
+let wspParsed=[],wspFecha='';
+
+function analizarWsp(){
+  const txt=document.getElementById('wsp-text').value;
+  if(!txt.trim()){alert('Pega el texto del pedido primero.');return;}
+  const{fechaPedido,items}=parseWhatsApp(txt);
+  wspFecha=fechaPedido;
+  if(!items.length){document.getElementById('wsp-preview').innerHTML='<div class="alert al-warn"><div class="al-ic">◆</div><div>No se reconocieron pedidos en el texto. Revisa el formato (nombre, café x cantidad unidad - molienda, precio).</div></div>';document.getElementById('wsp-guardar-wrap').style.display='none';return;}
+  wspParsed=items.map(it=>{
+    const um=matchOrigen(it.origenTxt,it.precio,it.unidad);
+    return{...it,matchC:um.match,confidence:um.confidence,formato:matchFormato(it.moliendaTxt)};
+  });
+  renderWspPreview();
+}
+
+function origenOptionsHtml(sel){
+  return cat.map(c=>`<option value="${c.n}" ${c.n===sel?'selected':''}>${c.n}${c.on?'':' (sin stock)'}</option>`).join('');
+}
+
+function renderWspPreview(){
+  const el=document.getElementById('wsp-preview');
+  el.innerHTML=`<div class="field" style="margin-bottom:10px;"><div class="lbl">Fecha del pedido</div><input type="date" id="imp-fecha" value="${wspFecha}"/></div>`+
+    wspParsed.map((it,i)=>{
+      const warn=it.confidence!=='alta'?`<div class="ph" style="color:#b45309;">⚠ verifica el origen — precio detectado en el texto: $${it.precio.toLocaleString('es-CL')}</div>`:'';
+      return`<div class="item-row imp-row" data-i="${i}" style="flex-direction:column;align-items:stretch;">
+        <div class="field-row">
+          <div class="field"><div class="lbl">Cliente</div><input type="text" id="imp-cliente-${i}" value="${(it.nombre||'').replace(/"/g,'')}"/></div>
+          <div class="field"><div class="lbl">Origen</div><select id="imp-origen-${i}">${origenOptionsHtml(it.matchC?it.matchC.n:'')}</select></div>
+        </div>
+        <div class="field-row3">
+          <div class="field"><div class="lbl">Molienda</div>
+            <select id="imp-molienda-${i}">${['Grano','Espresso','Italiana','Francesa','Filtrado'].map(f=>`<option value="${f}" ${f===it.formato?'selected':''}>${f}</option>`).join('')}</select>
+          </div>
+          <div class="field"><div class="lbl">Cant.</div><input type="number" id="imp-cant-${i}" value="${it.cantidad}" min="1"/></div>
+          <div class="field"><div class="lbl">Presentación</div>
+            <select id="imp-unidad-${i}">
+              <option value="kg" ${it.unidad==='kg'?'selected':''}>1 kg</option>
+              <option value="2x500" ${it.unidad==='2x500'?'selected':''}>2×500 gr</option>
+              <option value="250g" ${it.unidad==='250g'?'selected':''}>250 gr</option>
+              <option value="250gp" ${it.unidad==='250gp'?'selected':''}>250 gr Premium</option>
+            </select>
+          </div>
+        </div>
+        ${warn}
+        <button class="btn btn-sm btn-danger" style="align-self:flex-start;" onclick="this.closest('.imp-row').remove()">Quitar</button>
+      </div>`;
+    }).join('');
+  document.getElementById('wsp-guardar-wrap').style.display='flex';
+  document.getElementById('wsp-res').innerHTML='';
+}
+
+function cancelarImportWsp(){
+  document.getElementById('wsp-text').value='';
+  document.getElementById('wsp-preview').innerHTML='';
+  document.getElementById('wsp-guardar-wrap').style.display='none';
+  document.getElementById('wsp-res').innerHTML='';
+  wspParsed=[];
+}
+
+async function confirmarImportWsp(){
+  const rows=document.querySelectorAll('#wsp-preview .imp-row');
+  if(!rows.length){alert('No hay pedidos para guardar.');return;}
+  const fecha=document.getElementById('imp-fecha').value||hoy(),mes=fecha.slice(0,7);
+  let kp=getKgMes(mes),guardados=0,errores=0;
+  for(let idx=0;idx<rows.length;idx++){
+    const row=rows[idx],i=row.dataset.i;
+    const nombre=document.getElementById(`imp-cliente-${i}`).value.trim();
+    const origenN=document.getElementById(`imp-origen-${i}`).value;
+    const formato=document.getElementById(`imp-molienda-${i}`).value;
+    const cantidad=parseInt(document.getElementById(`imp-cant-${i}`).value)||1;
+    const unidad=document.getElementById(`imp-unidad-${i}`).value;
+    if(!nombre||!origenN)continue;
+    const c=getCat(origenN);if(!c)continue;
+    const calc=calcItemFromCat(c,unidad,cantidad);
+    const itemObj={origen:c.n,formato,cantidad,unidad,pesoKg:calc.pesoKg,precioU:calc.precioU,emp:calc.emp||0,totalKg:calc.pesoKg,totalP:calc.totalP,label:calc.label};
+    const com=calcCom(kp,itemObj.totalKg);
+    const match=clientes.find(cl=>normTxt(cl.nombre)===normTxt(nombre));
+    const clienteId=match?match.id:null;
+    const rowDb={id:Date.now()+idx,fecha,mes,canal:'comunidad',cliente:nombre,contacto:'',items:[itemObj],comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:clienteId};
+    try{
+      await sbInsert('pedidos',rowDb);
+      pedidos.push({id:rowDb.id,fecha,mes,canal:'comunidad',cliente:nombre,clienteId,contacto:'',cafeNombre:'',cafeContacto:'',items:[itemObj],comision:com,estado:'pendiente',codigo:''});
+      kp+=itemObj.totalKg;guardados++;
+    }catch(e){console.error('Error guardando pedido importado',nombre,e);errores++;}
+  }
+  document.getElementById('wsp-res').innerHTML=errores?`<div class="alert al-warn"><div class="al-ic">◆</div><div>${guardados} pedido(s) guardado(s), ${errores} con error.</div></div>`:`<div class="alert al-good"><div class="al-ic">✓</div><div>${guardados} pedido(s) importado(s) y guardados.</div></div>`;
+  if(guardados){document.getElementById('wsp-text').value='';document.getElementById('wsp-preview').innerHTML='';document.getElementById('wsp-guardar-wrap').style.display='none';wspParsed=[];}
+}
 
 // ── CATÁLOGO ──────────────────────────────────────────────────────────────────
 function renderCat(){
