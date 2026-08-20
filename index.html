@@ -173,25 +173,11 @@ textarea{resize:vertical;min-height:52px;}
     </div>
     <div class="field"><div class="lbl">Fecha</div><input type="date" id="fecha"/></div>
   </div>
-  <div id="campo-com">
-    <div class="field" style="margin-bottom:8px;">
-      <div class="lbl">Nombre cliente <span style="font-weight:400;text-transform:none;font-size:9px;">(registro interno — no aparece en OC)</span></div>
-      <div style="display:flex;gap:6px;">
-        <input type="text" id="cliente" list="cliente-list" placeholder="Ej: Bárbara Yañez" style="flex:1;" oninput="resolveCliente()"/>
-        <button type="button" class="btn btn-sm" onclick="toggleNuevoClienteForm()" style="flex-shrink:0;">+ Nuevo</button>
-      </div>
-      <input type="hidden" id="cliente-id"/>
-      <div class="ph" id="cliente-match"></div>
-      <datalist id="cliente-list"></datalist>
-    </div>
-    <div id="nuevo-cliente-form" style="display:none;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;margin-bottom:8px;">
-      <div class="field-row">
-        <div class="field"><div class="lbl">Teléfono</div><input type="text" id="nc-tel" placeholder="+56 9 1234 5678"/></div>
-        <div class="field"><div class="lbl">Dirección</div><input type="text" id="nc-dir" placeholder="Opcional"/></div>
-      </div>
-      <button type="button" class="btn btn-sm btn-primary" onclick="crearClienteRapido()">Guardar cliente</button>
-      <button type="button" class="btn btn-sm" onclick="toggleNuevoClienteForm()">Cancelar</button>
-      <div id="nc-res" style="margin-top:6px;"></div>
+  <div class="field" style="margin-bottom:8px;">
+    <div class="lbl">Código de ciclo <span style="font-weight:400;text-transform:none;font-size:9px;">(generado automáticamente — aparece en OC)</span></div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input type="text" id="cod-ciclo" style="flex:1;font-family:monospace;font-size:13px;" readonly/>
+      <button type="button" class="btn btn-sm" onclick="genCodigo()">↺</button>
     </div>
   </div>
   <div id="campo-caf" style="display:none;">
@@ -202,6 +188,7 @@ textarea{resize:vertical;min-height:52px;}
       <div class="field"><div class="lbl">Contacto</div><input type="text" id="cafe-contacto" placeholder="Ej: María Edwards"/></div>
     </div>
   </div>
+  <datalist id="cliente-list"></datalist>
 </div>
 
 <div class="card">
@@ -241,7 +228,7 @@ textarea{resize:vertical;min-height:52px;}
   <div id="ri" class="alert al-info" style="display:none;margin-bottom:10px;">
     <div class="al-ic">☕</div><div id="ri-txt"></div>
   </div>
-  <div id="item-cliente-wrap" style="display:none;margin-bottom:9px;">
+  <div id="item-cliente-wrap" style="display:none;margin-bottom:10px;">
     <div class="field">
       <div class="lbl">Cliente que pide este ítem</div>
       <div style="display:flex;gap:6px;">
@@ -473,13 +460,16 @@ function fillOrigen(){
 }
 
 function normTxt(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
-function resolveCliente(){
-  const v=document.getElementById('cliente').value.trim();
-  const m=document.getElementById('cliente-match'),idF=document.getElementById('cliente-id');
-  if(!v){m.innerHTML='';idF.value='';return;}
-  const match=clientes.find(c=>normTxt(c.nombre)===normTxt(v));
-  if(match){idF.value=match.id;m.innerHTML=`<span style="color:#15803d;">✓ Cliente existente${match.tel?' · '+match.tel:''}</span>`;}
-  else{idF.value='';m.innerHTML=`<span style="color:#9ca3af;">Cliente nuevo (sin registrar en directorio)</span>`;}
+function normTxt(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+function genCodigo(){
+  const d=new Date(),dd=String(d.getDate()).padStart(2,'0'),mm=String(d.getMonth()+1).padStart(2,'0'),yy=String(d.getFullYear()).slice(-2);
+  const rnd=Math.random().toString(36).slice(2,5).toUpperCase();
+  const cod=`CP-${yy}${mm}${dd}-${rnd}`;
+  const el=document.getElementById('cod-ciclo');if(el)el.value=cod;return cod;
+}
+function fillClienteList(){
+  const dl=document.getElementById('cliente-list');if(!dl)return;
+  dl.innerHTML=clientes.map(c=>`<option value="${c.nombre.replace(/"/g,'')}">`).join('');
 }
 function resolveItemCliente(){
   const v=document.getElementById('item-cliente').value.trim();
@@ -487,7 +477,7 @@ function resolveItemCliente(){
   if(!v){m.innerHTML='';idF.value='';return;}
   const match=clientes.find(c=>normTxt(c.nombre)===normTxt(v));
   if(match){idF.value=match.id;m.innerHTML=`<span style="color:#15803d;">✓ ${match.nombre}${match.tel?' · '+match.tel:''}</span>`;}
-  else{idF.value='';m.innerHTML=`<span style="color:#f59e0b;">Nuevo — se creará al guardar el pedido</span>`;}
+  else{idF.value='';m.innerHTML=`<span style="color:#f59e0b;">Nuevo — se registrará al guardar</span>`;}
 }
 function toggleNuevoClienteItemForm(){
   const f=document.getElementById('nuevo-cliente-item-form');
@@ -513,36 +503,8 @@ async function crearClienteItem(){
     setTimeout(()=>{toggleNuevoClienteItemForm();res.innerHTML='';},1200);
   }catch(e){res.innerHTML='<span style="color:#dc2626;">Error Supabase</span>';}
 }
-function fillClienteList(){
-  const dl=document.getElementById('cliente-list');if(!dl)return;
-  dl.innerHTML=clientes.map(c=>`<option value="${c.nombre.replace(/"/g,'')}">`).join('');
-}
-function toggleNuevoClienteForm(){
-  const f=document.getElementById('nuevo-cliente-form');
-  f.style.display=f.style.display==='block'?'none':'block';
-  if(f.style.display==='block')document.getElementById('nc-tel').focus();
-}
-async function crearClienteRapido(){
-  const nombre=document.getElementById('cliente').value.trim();
-  const tel=document.getElementById('nc-tel').value.trim();
-  const dir=document.getElementById('nc-dir').value.trim();
-  const res=document.getElementById('nc-res');
-  if(!nombre){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Escribe el nombre en el campo de arriba primero.</div></div>';return;}
-  if(clientes.some(c=>normTxt(c.nombre)===normTxt(nombre))){res.innerHTML='<div class="alert al-warn"><div class="al-ic">◆</div><div>Ya existe un cliente con ese nombre.</div></div>';return;}
-  const id='cl_'+Date.now();
-  try{
-    await sbInsert('clientes',{id,nombre,tel,dir,notas:'',creado_en:hoy()});
-    clientes.push({id,nombre,tel,dir,notas:'',creado:hoy()});
-    fillClienteList();resolveCliente();
-    document.getElementById('nc-tel').value='';document.getElementById('nc-dir').value='';
-    res.innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div><strong>${nombre}</strong> guardado en el directorio.</div></div>`;
-    setTimeout(()=>{toggleNuevoClienteForm();res.innerHTML='';},1400);
-  }catch(e){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Error guardando en Supabase.</div></div>';}
-}
-
 function onCanalChange(){
   const v=document.getElementById('canal').value;
-  document.getElementById('campo-com').style.display=v==='comunidad'?'block':'none';
   document.getElementById('campo-caf').style.display=v==='cafeteria'?'block':'none';
   document.getElementById('item-cliente-wrap').style.display=v==='comunidad'?'block':'none';
 }
@@ -606,21 +568,20 @@ async function addItem(){
     clienteNombre=document.getElementById('item-cliente').value.trim();
     if(!clienteNombre){alert('Indica el cliente que pide este ítem.');return;}
     clienteId=document.getElementById('item-cliente-id').value||null;
-    // Si no tiene id pero tampoco existe en directorio, lo crea automáticamente
-    if(!clienteId&&!clientes.some(c=>normTxt(c.nombre)===normTxt(clienteNombre))){
-      const newId='cl_'+Date.now();
-      try{
-        await sbInsert('clientes',{id:newId,nombre:clienteNombre,tel:'',dir:'',notas:'',creado_en:hoy()});
-        clientes.push({id:newId,nombre:clienteNombre,tel:'',dir:'',notas:'',creado:hoy()});
-        fillClienteList();clienteId=newId;
-      }catch(e){console.error('Error creando cliente automático',e);}
-    } else if(!clienteId){
+    if(!clienteId){
       const match=clientes.find(c=>normTxt(c.nombre)===normTxt(clienteNombre));
-      if(match)clienteId=match.id;
+      if(match){clienteId=match.id;}
+      else{
+        const newId='cl_'+Date.now();
+        try{
+          await sbInsert('clientes',{id:newId,nombre:clienteNombre,tel:'',dir:'',notas:'',creado_en:hoy()});
+          clientes.push({id:newId,nombre:clienteNombre,tel:'',dir:'',notas:'',creado:hoy()});
+          fillClienteList();clienteId=newId;
+        }catch(e){console.error('Error creando cliente',e);}
+      }
     }
   }
-  items.push({origen:n,formato:f,cantidad:q,unidad:uAct,pesoKg:pu.pesoKg,precioU:pu.precio,emp:pu.emp,totalKg:pu.pesoKg*q,totalP:pu.precio*q,label:pu.label,clienteNombre,clienteId});
-  // Limpiar campos del ítem
+  items.push({origen:n,formato:f,cantidad:q,unidad:uAct,pesoKg:pu.pesoKg,precioU:pu.precio,emp:pu.emp||0,totalKg:pu.pesoKg*q,totalP:pu.precio*q,label:pu.label,clienteNombre,clienteId});
   document.getElementById('origen').value='';document.getElementById('cantidad').value='1';
   if(canal==='comunidad'){document.getElementById('item-cliente').value='';document.getElementById('item-cliente-id').value='';document.getElementById('item-cliente-match').innerHTML='';}
   document.querySelectorAll('.upill').forEach(p=>p.classList.remove('active'));
@@ -660,37 +621,36 @@ function calcCom(kp,kn){let c=0;for(let k=0;k<kn;k+=.25)c+=((kp+k>=CU)?CA:CB)*.2
 
 async function savePedido(){
   const canal=document.getElementById('canal').value,fecha=document.getElementById('fecha').value||hoy(),mes=fecha.slice(0,7);
+  const codigo=document.getElementById('cod-ciclo').value||genCodigo();
   if(!items.length){alert('Agrega ítems.');return;}
 
   if(canal==='cafeteria'){
     const cli=document.getElementById('cafe-nombre').value,con=document.getElementById('cafe-contacto').value;
-    if(!cli){alert('Ingresa el nombre de la cafetería.');return;}
     const kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=calcCom(kp,kn);
-    const row={id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:'pendiente',cafe_nombre:cli,cafe_contacto:con,cliente_id:null};
+    const row={id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:'pendiente',cafe_nombre:cli,cafe_contacto:con,cliente_id:null,codigo};
     try{
       await sbInsert('pedidos',row);
-      pedidos.push({id:row.id,fecha,mes,canal,cliente:cli,clienteId:null,contacto:con,cafeNombre:cli,cafeContacto:con,items:[...items],comision:com,estado:'pendiente',codigo:''});
-      alert('✅ Pedido B2B guardado. Comisión: $'+com.toLocaleString('es-CL'));limpiar();
+      pedidos.push({id:row.id,fecha,mes,canal,cliente:cli,clienteId:null,contacto:con,cafeNombre:cli,cafeContacto:con,items:[...items],comision:com,estado:'pendiente',codigo});
+      alert(`✅ Pedido B2B guardado.\nCódigo: ${codigo}\nComisión: $${com.toLocaleString('es-CL')}`);limpiar();
     }catch(e){alert('Error guardando en Supabase.');}
     return;
   }
 
-  // Comunidad: un pedido por ítem (un cliente por ítem)
+  // Comunidad: un registro por ítem/cliente
   let kp=getKgMes(mes),guardados=0,comTotal=0;
   for(let idx=0;idx<items.length;idx++){
     const it=items[idx];
     const com=calcCom(kp,it.totalKg);
-    const row={id:Date.now()+idx,fecha,mes,canal:'comunidad',cliente:it.clienteNombre||'Sin nombre',contacto:'',items:[it],comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:it.clienteId||null};
+    const rowId=Date.now()+idx;
+    const row={id:rowId,fecha,mes,canal:'comunidad',cliente:it.clienteNombre||'Sin nombre',contacto:'',items:[it],comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:it.clienteId||null,codigo};
     try{
       await sbInsert('pedidos',row);
-      pedidos.push({id:row.id,fecha,mes,canal:'comunidad',cliente:row.cliente,clienteId:it.clienteId||null,contacto:'',cafeNombre:'',cafeContacto:'',items:[it],comision:com,estado:'pendiente',codigo:''});
+      pedidos.push({id:rowId,fecha,mes,canal:'comunidad',cliente:row.cliente,clienteId:it.clienteId||null,contacto:'',cafeNombre:'',cafeContacto:'',items:[it],comision:com,estado:'pendiente',codigo});
       kp+=it.totalKg;comTotal+=com;guardados++;
     }catch(e){console.error('Error guardando ítem',it.clienteNombre,e);}
   }
-  const kt=getKgMes(mes);
-  let msg=`✅ ${guardados} ítem(s) guardados.\nComisión total estimada: $${comTotal.toLocaleString('es-CL')}`;
-  if(kp<CU+items.reduce((s,i)=>s+i.totalKg,0)&&kt>=CU)msg='🎉 ¡Superaste los 25 kg!\n$2.000/kg activo desde el kg 26.\n'+msg;
-  alert(msg);limpiar();
+  alert(`✅ ${guardados} ítem(s) guardados.\nCódigo ciclo: ${codigo}\nComisión total: $${comTotal.toLocaleString('es-CL')}`);
+  limpiar();
 }
 
 function genDoc(p){
@@ -699,7 +659,7 @@ function genDoc(p){
   const temp=p.items.filter(i=>i.unidad==='2x500').reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
   const tempp=p.items.filter(i=>i.unidad==='250gp').reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
   const fd=p.fecha?new Date(p.fecha+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'}):'';
-  let t=`ORDEN DE COMPRA — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nRicardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\n${'─'.repeat(56)}\nFecha:  ${fd}\nCanal:  ${p.canal==='comunidad'?'Comunidad WhatsApp':'Cafetería B2B'}\n${'─'.repeat(56)}\nDETALLE\n\n`;
+  let t=`ORDEN DE COMPRA — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nRicardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\n${'─'.repeat(56)}\nFecha:  ${fd}\nCódigo: ${p.codigo||'—'}\nCanal:  ${p.canal==='comunidad'?'Comunidad WhatsApp':'Cafetería B2B'}\n${'─'.repeat(56)}\nDETALLE\n\n`;
   t+=`Origen           Molienda        Cant  Present.       P/unit       Total\n${'─'.repeat(68)}\n`;
   p.items.forEach(it=>{const mk=it.unidad==='2x500'?' *':it.unidad==='250gp'?' †':'';t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(it.precioU.toLocaleString('es-CL')).padEnd(12)} $${it.totalP.toLocaleString('es-CL')}${mk}\n`;});
   t+=`${'─'.repeat(68)}\n`;
@@ -895,16 +855,7 @@ async function confirmarImportWsp(){
     const itemObj={origen:c.n,formato,cantidad,unidad,pesoKg:calc.pesoKg,precioU:calc.precioU,emp:calc.emp||0,totalKg:calc.pesoKg,totalP:calc.totalP,label:calc.label};
     const com=calcCom(kp,itemObj.totalKg);
     const match=clientes.find(cl=>normTxt(cl.nombre)===normTxt(nombre));
-    let clienteId=match?match.id:null;
-    // Crear cliente automáticamente si no existe
-    if(!clienteId){
-      const newId='cl_'+Date.now()+idx;
-      try{
-        await sbInsert('clientes',{id:newId,nombre,tel:'',dir:'',notas:'',creado_en:hoy()});
-        clientes.push({id:newId,nombre,tel:'',dir:'',notas:'',creado:hoy()});
-        fillClienteList();clienteId=newId;
-      }catch(e){console.error('Error creando cliente',nombre,e);}
-    }
+    const clienteId=match?match.id:null;
     const rowDb={id:Date.now()+idx,fecha,mes,canal:'comunidad',cliente:nombre,contacto:'',items:[itemObj],comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:clienteId};
     try{
       await sbInsert('pedidos',rowDb);
@@ -973,62 +924,32 @@ async function addOrigen(){
 
 // ── CLIENTES ──────────────────────────────────────────────────────────────────
 function buildPerfil(key){
-  // key: clienteId (cl_...) o nombre exacto como fallback
+  // key puede ser un clienteId (cl_...) o, para pedidos viejos sin id, el nombre exacto
   const esId=key.startsWith('cl_');
-  const nombre=esId?(clientes.find(c=>c.id===key)?.nombre||key):key;
+  const ps=pedidos.filter(p=>p.canal==='comunidad'&&(esId?p.clienteId===key:(!p.clienteId&&p.cliente===key)));
+  if(!ps.length)return null;
+  const nombre=esId?(clientes.find(c=>c.id===key)?.nombre||ps[0].cliente):key;
   const cliInfo=esId?clientes.find(c=>c.id===key):null;
-  const orig={},fmts={},meses=new Set(),pedidosDates=[];let tkg=0,tgasto=0;
-
-  pedidos.filter(p=>p.canal==='comunidad').forEach(p=>{
-    // Filtrar ítems que pertenecen a este cliente
-    const misItems=p.items.filter(it=>{
-      if(esId){
-        // Coincide por clienteId en el ítem, o por clienteId del pedido (pedido de 1 ítem nuevo)
-        if(it.clienteId===key)return true;
-        // Pedido de un solo ítem cuyo cliente_id coincide y no tiene clienteId por ítem
-        if(!it.clienteId&&p.items.length===1&&p.clienteId===key)return true;
-        return false;
-      } else {
-        // Fallback por nombre: coincide clienteNombre del ítem o cliente del pedido (sin id)
-        if(it.clienteNombre&&normTxt(it.clienteNombre)===normTxt(nombre))return true;
-        if(!it.clienteNombre&&!p.clienteId&&normTxt(p.cliente)===normTxt(nombre))return true;
-        return false;
-      }
-    });
-    if(!misItems.length)return;
-    meses.add(p.mes);pedidosDates.push(p.fecha);
-    misItems.forEach(i=>{orig[i.origen]=(orig[i.origen]||0)+i.totalKg;fmts[i.formato]=(fmts[i.formato]||0)+i.totalKg;tkg+=i.totalKg;tgasto+=i.totalP;});
-  });
-
-  if(!tkg)return null;
+  const orig={},fmts={},meses=new Set();let tkg=0,tgasto=0;
+  ps.forEach(p=>{meses.add(p.mes);p.items.forEach(i=>{orig[i.origen]=(orig[i.origen]||0)+i.totalKg;fmts[i.formato]=(fmts[i.formato]||0)+i.totalKg;tkg+=i.totalKg;tgasto+=i.totalP;});});
   let se=0,sc=0;
   Object.entries(orig).forEach(([o,k])=>{if(OTIPO[o]==='especialidad')se+=k;if(OTIPO[o]==='clasico')sc+=k;});
   Object.entries(fmts).forEach(([f,k])=>{if(FTIPO[f]==='exp')se+=k*.5;if(FTIPO[f]==='clas')sc+=k*.5;});
   const div=Object.keys(orig).length,pe=tkg>0?se/tkg:0,pc=tkg>0?sc/tkg:0;
-  const npeds=pedidosDates.length;
   let perfil,tc,em,desc2;
   if(pe>.5&&div>=3){perfil='Explorador audaz';tc='pt-atrv';em='🌟';desc2='Especialidad y métodos alternativos.';}
   else if(pe>.3&&pc>.2&&div>=2){perfil='Curioso con criterio';tc='pt-mixt';em='🔍';desc2='Mezcla clásicos con especialidad.';}
   else if(pc>.5&&div<=2){perfil='Clásico fiel';tc='pt-clas';em='☕';desc2='Fiel a sus favoritos.';}
   else if(div>=4){perfil='Gran explorador';tc='pt-expl';em='🗺️';desc2='Prueba todo. Ideal para novedades.';}
-  else if(npeds>=2&&div<=2){perfil='Conservador recurrente';tc='pt-cons';em='🔒';desc2='Frecuente pero en orígenes de confort.';}
+  else if(ps.length>=2&&div<=2){perfil='Conservador recurrente';tc='pt-cons';em='🔒';desc2='Frecuente pero en orígenes de confort.';}
   else{perfil='En descubrimiento';tc='pt-mixt';em='✨';desc2='Perfil en construcción.';}
-  const fechasSort=pedidosDates.sort(),ult=fechasSort[fechasSort.length-1];
+  const fechas=ps.map(p=>p.fecha).sort(),ult=fechas[fechas.length-1];
   const dias=Math.floor((new Date()-new Date(ult+'T12:00:00'))/864e5);
-  return{key,nombre,tel:cliInfo?.tel||'',dir:cliInfo?.dir||'',npeds,tkg,tgasto,meses:meses.size,orig,fmts,perfil,tc,em,desc:desc2,ult,dias,div};
+  return{key,nombre,tel:cliInfo?.tel||'',dir:cliInfo?.dir||'',npeds:ps.length,tkg,tgasto,meses:meses.size,orig,fmts,perfil,tc,em,desc:desc2,ult,dias,div};
 }
 function getAllCl(){
   const keys=new Set();
-  pedidos.filter(p=>p.canal==='comunidad').forEach(p=>{
-    p.items.forEach(it=>{
-      if(it.clienteId)keys.add(it.clienteId);
-      else if(it.clienteNombre)keys.add(it.clienteNombre);
-    });
-    // Pedidos sin clienteNombre por ítem (muy antiguos): usar cliente del pedido
-    if(p.items.every(it=>!it.clienteNombre&&!it.clienteId)){
-      keys.add(p.clienteId||p.cliente);
-    }
-  });
+  pedidos.filter(p=>p.canal==='comunidad').forEach(p=>keys.add(p.clienteId||p.cliente));
   return[...keys].map(k=>buildPerfil(k)).filter(Boolean).sort((a,b)=>b.tkg-a.tkg);
 }
 function renderClientes(){
@@ -1104,18 +1025,10 @@ function openModal(key){
   document.getElementById('m-nombre').textContent=`${c.em} ${c.nombre}`;
   const to=Object.entries(c.orig).sort((a,b)=>b[1]-a[1]),tf=Object.entries(c.fmts).sort((a,b)=>b[1]-a[1]);
   const esId=key.startsWith('cl_');
-  // Construir historial: pedidos que contienen ítems de este cliente
-  const histEntradas=[];
-  pedidos.filter(p=>p.canal==='comunidad').sort((a,b)=>b.fecha.localeCompare(a.fecha)).forEach(p=>{
-    const misItems=p.items.filter(it=>{
-      if(esId){if(it.clienteId===key)return true;if(!it.clienteId&&p.items.length===1&&p.clienteId===key)return true;return false;}
-      else{if(it.clienteNombre&&normTxt(it.clienteNombre)===normTxt(c.nombre))return true;if(!it.clienteNombre&&!p.clienteId&&normTxt(p.cliente)===normTxt(c.nombre))return true;return false;}
-    });
-    if(misItems.length)histEntradas.push({fecha:p.fecha,items:misItems});
-  });
+  const histPeds=pedidos.filter(p=>p.canal==='comunidad'&&(esId?p.clienteId===key:(!p.clienteId&&p.cliente===key)));
   document.getElementById('m-content').innerHTML=`
     ${c.tel||c.dir?`<div style="font-size:11px;color:#6b7280;margin-bottom:8px;">${c.tel?'📞 '+c.tel:''}${c.tel&&c.dir?' · ':''}${c.dir?'📍 '+c.dir:''}</div>`:''}
-    <div class="srow3"><div class="st"><div class="stv">${c.npeds}</div><div class="stl">Compras</div></div><div class="st"><div class="stv">${c.tkg.toFixed(1)}kg</div><div class="stl">Total</div></div><div class="st"><div class="stv">${c.div}</div><div class="stl">Orígenes</div></div></div>
+    <div class="srow3"><div class="st"><div class="stv">${c.npeds}</div><div class="stl">Pedidos</div></div><div class="st"><div class="stv">${c.tkg.toFixed(1)}kg</div><div class="stl">Total</div></div><div class="st"><div class="stv">${c.div}</div><div class="stl">Orígenes</div></div></div>
     <div class="srow3"><div class="st"><div class="stv">$${Math.round(c.tgasto/1000)}K</div><div class="stl">Gasto</div></div><div class="st"><div class="stv">$${Math.round(c.tgasto/c.npeds/1000)}K</div><div class="stl">Ticket prom.</div></div><div class="st"><div class="stv">${c.meses}</div><div class="stl">Meses</div></div></div>
     <div class="pbox">${c.em} <strong>${c.perfil}</strong><br>${c.desc}</div>
     ${c.dias>30?`<div class="alert al-warn" style="margin-top:8px;"><div class="al-ic">⏰</div><div>Sin compras hace ${c.dias} días.</div></div>`:''}
@@ -1125,7 +1038,7 @@ function openModal(key){
     <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;margin:9px 0 5px;">Formatos</div>
     <div style="margin-bottom:10px;">${tf.map(([f,k])=>`<span class="fc">${f} ${k.toFixed(2)}kg</span>`).join('')}</div>
     <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;margin-bottom:7px;">Historial</div>
-    ${histEntradas.map(e=>{const kp=e.items.reduce((s,i)=>s+i.totalKg,0),mp=e.items.reduce((s,i)=>s+i.totalP,0);return`<div class="hi">${e.fecha} · ${kp.toFixed(2)} kg · $${mp.toLocaleString('es-CL')}<br><span>${e.items.map(i=>i.origen+' '+i.label).join(' · ')}</span></div>`;}).join('')}
+    ${histPeds.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0);return`<div class="hi">${p.fecha} · ${kp.toFixed(2)} kg · $${mp.toLocaleString('es-CL')}<br><span>${p.items.map(i=>i.origen+' '+i.label).join(' · ')}</span></div>`;}).join('')}
     <div style="font-size:10px;color:#9ca3af;margin-top:8px;">Última: ${c.ult} (hace ${c.dias} días)</div>`;
   document.getElementById('ov').style.display='flex';
 }
@@ -1254,8 +1167,7 @@ async function delPedido(id,mes){
 
 function limpiar(){
   items=[];
-  ['cliente','cafe-contacto'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  document.getElementById('cliente-id').value='';document.getElementById('cliente-match').innerHTML='';
+  const cc=document.getElementById('cafe-contacto');if(cc)cc.value='';
   const ic=document.getElementById('item-cliente');if(ic)ic.value='';
   const iid=document.getElementById('item-cliente-id');if(iid)iid.value='';
   const im=document.getElementById('item-cliente-match');if(im)im.innerHTML='';
@@ -1265,6 +1177,7 @@ function limpiar(){
   document.getElementById('ph').innerHTML='';document.getElementById('ri').style.display='none';
   document.getElementById('doc-sec').style.display='none';document.getElementById('items-wrap').style.display='none';
   document.getElementById('cant-lbl').textContent='(nº de kilos)';
+  genCodigo(); // nuevo código para el siguiente ciclo
 }
 
 // INIT
@@ -1273,7 +1186,7 @@ document.getElementById('fecha').value=hoy();
 (async function init(){
   document.body.style.opacity='.5';
   await load();
-  fillOrigen();fillClienteList();
+  fillOrigen();fillClienteList();genCodigo();onCanalChange();
   document.body.style.opacity='1';
 })();
 </script>
