@@ -636,21 +636,18 @@ async function savePedido(){
     return;
   }
 
-  // Comunidad: un registro por ítem/cliente
-  let kp=getKgMes(mes),guardados=0,comTotal=0;
-  for(let idx=0;idx<items.length;idx++){
-    const it=items[idx];
-    const com=calcCom(kp,it.totalKg);
-    const rowId=Date.now()+idx;
-    const row={id:rowId,fecha,mes,canal:'comunidad',cliente:it.clienteNombre||'Sin nombre',contacto:'',items:[it],comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:it.clienteId||null,codigo};
-    try{
-      await sbInsert('pedidos',row);
-      pedidos.push({id:rowId,fecha,mes,canal:'comunidad',cliente:row.cliente,clienteId:it.clienteId||null,contacto:'',cafeNombre:'',cafeContacto:'',items:[it],comision:com,estado:'pendiente',codigo});
-      kp+=it.totalKg;comTotal+=com;guardados++;
-    }catch(e){console.error('Error guardando ítem',it.clienteNombre,e);}
-  }
-  alert(`✅ ${guardados} ítem(s) guardados.\nCódigo ciclo: ${codigo}\nComisión total: $${comTotal.toLocaleString('es-CL')}`);
-  limpiar();
+  // Comunidad: un solo registro con todos los ítems individualizados por cliente
+  const kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=calcCom(kp,kn);
+  const clientes_ciclo=[...new Set(items.map(i=>i.clienteNombre).filter(Boolean))].join(', ');
+  const row={id:Date.now(),fecha,mes,canal:'comunidad',cliente:clientes_ciclo||'Ciclo comunidad',contacto:'',items:[...items],comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:null,codigo};
+  try{
+    await sbInsert('pedidos',row);
+    pedidos.push({...row,clienteId:null,cafeNombre:'',cafeContacto:''});
+    const kt=getKgMes(mes);
+    let msg=`✅ Ciclo guardado.\nCódigo: ${codigo}\n${items.length} ítem(s) · ${kn.toFixed(2)} kg\nComisión: $${com.toLocaleString('es-CL')}`;
+    if(kp<CU&&kt>=CU)msg+= '\n🎉 ¡Superaste los 25 kg! $2.000/kg activo.';
+    alert(msg);limpiar();
+  }catch(e){alert('Error guardando en Supabase.');}
 }
 
 function genDoc(p){
@@ -661,7 +658,7 @@ function genDoc(p){
   const fd=p.fecha?new Date(p.fecha+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'}):'';
   let t=`ORDEN DE COMPRA — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nRicardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\n${'─'.repeat(56)}\nFecha:  ${fd}\nCódigo: ${p.codigo||'—'}\nCanal:  ${p.canal==='comunidad'?'Comunidad WhatsApp':'Cafetería B2B'}\n${'─'.repeat(56)}\nDETALLE\n\n`;
   t+=`Origen           Molienda        Cant  Present.       P/unit       Total\n${'─'.repeat(68)}\n`;
-  p.items.forEach(it=>{const mk=it.unidad==='2x500'?' *':it.unidad==='250gp'?' †':'';t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(it.precioU.toLocaleString('es-CL')).padEnd(12)} $${it.totalP.toLocaleString('es-CL')}${mk}\n`;});
+  p.items.forEach(it=>{const mk=it.unidad==='2x500'?' *':it.unidad==='250gp'?' †':'';const cli=it.clienteNombre?` [${it.clienteNombre}]`:'';t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(it.precioU.toLocaleString('es-CL')).padEnd(12)} $${it.totalP.toLocaleString('es-CL')}${mk}${cli}\n`;});
   t+=`${'─'.repeat(68)}\n`;
   if(temp)t+=`* 2×500gr: cargo empaque doble $${EMP}/kg · Total empaque: $${temp.toLocaleString('es-CL')}\n`;
   if(tempp)t+=`† 250gr Premium: cargo envase Premium $${EMPP}/u · Total envase Premium: $${tempp.toLocaleString('es-CL')}\n`;
