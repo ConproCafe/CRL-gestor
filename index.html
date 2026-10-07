@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-22</div>
+  <div style="font-size:9px;opacity:.4;">V1-23</div>
 </div>
 
 <div class="container">
@@ -662,8 +662,9 @@ function genDoc(p){
     const mk=it.unidad==='2x500'?' *':it.unidad==='250gp'?' †':'';
     const cli=it.clienteNombre?` [${it.clienteNombre}]`:'';
     const c=cat.find(x=>x.n===it.origen)||{kp:0,gp:0};
-    const precioP=it.unidad==='250g'||it.unidad==='250gp'?c.gp:c.kp;
-    const totalP=Math.round(precioP*it.totalKg);
+    const es250=it.unidad==='250g'||it.unidad==='250gp';
+    const precioP=es250?c.gp:c.kp;
+    const totalP=es250?precioP*it.cantidad:Math.round(precioP*it.totalKg);
     subProv+=totalP;
     t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(precioP.toLocaleString('es-CL')).padEnd(12)} $${totalP.toLocaleString('es-CL')}${mk}${cli}\n`;
   });
