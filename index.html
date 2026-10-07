@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-21</div>
+  <div style="font-size:9px;opacity:.4;">V1-22</div>
 </div>
 
 <div class="container">
@@ -657,13 +657,22 @@ function genDoc(p){
   const fd=p.fecha?new Date(p.fecha+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'}):'';
   let t=`ORDEN DE COMPRA — CRL Coffee Roasting Labs\nTostaduría Erik Berwart Araya · RUT 77.586.349-8\nRicardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\n${'─'.repeat(56)}\nFecha:  ${fd}\nCódigo: ${p.codigo||'—'}\nCanal:  ${p.canal==='comunidad'?'Comunidad WhatsApp':'Cafetería B2B'}\n${'─'.repeat(56)}\nDETALLE\n\n`;
   t+=`Origen           Molienda        Cant  Present.       P/unit       Total\n${'─'.repeat(68)}\n`;
-  p.items.forEach(it=>{const mk=it.unidad==='2x500'?' *':it.unidad==='250gp'?' †':'';const cli=it.clienteNombre?` [${it.clienteNombre}]`:'';t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(it.precioU.toLocaleString('es-CL')).padEnd(12)} $${it.totalP.toLocaleString('es-CL')}${mk}${cli}\n`;});
+  let subProv=0;
+  p.items.forEach(it=>{
+    const mk=it.unidad==='2x500'?' *':it.unidad==='250gp'?' †':'';
+    const cli=it.clienteNombre?` [${it.clienteNombre}]`:'';
+    const c=cat.find(x=>x.n===it.origen)||{kp:0,gp:0};
+    const precioP=it.unidad==='250g'||it.unidad==='250gp'?c.gp:c.kp;
+    const totalP=Math.round(precioP*it.totalKg);
+    subProv+=totalP;
+    t+=`${it.origen.padEnd(16)} ${it.formato.padEnd(15)} ${String(it.cantidad).padEnd(5)} ${it.label.padEnd(14)} $${String(precioP.toLocaleString('es-CL')).padEnd(12)} $${totalP.toLocaleString('es-CL')}${mk}${cli}\n`;
+  });
   t+=`${'─'.repeat(68)}\n`;
   if(temp)t+=`* 2×500gr: cargo empaque doble $${EMP}/kg · Total empaque: $${temp.toLocaleString('es-CL')}\n`;
   if(tempp)t+=`† 250gr Premium: cargo envase Premium $${EMPP}/u · Total envase Premium: $${tempp.toLocaleString('es-CL')}\n`;
-  t+=`Total kg: ${tkg.toFixed(2)} kg\nSubtotal: $${sub.toLocaleString('es-CL')}\n`;
+  t+=`Total kg: ${tkg.toFixed(2)} kg\nSubtotal: $${subProv.toLocaleString('es-CL')}\n`;
   if(del)t+=`Delivery: $3.500\n`;
-  t+=`TOTAL: $${(sub+del).toLocaleString('es-CL')} (IVA incl.)\n`;
+  t+=`TOTAL: $${(subProv+del).toLocaleString('es-CL')} (IVA incl.)\n`;
   // ── COMISIÓN (tramo) ──
   const kprev=typeof p._kprev==='number'?p._kprev:0;
   const kn=tkg;
