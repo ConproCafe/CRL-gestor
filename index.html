@@ -825,9 +825,21 @@ function renderWspPreview(){
   el.innerHTML=`<div class="field" style="margin-bottom:10px;"><div class="lbl">Fecha del pedido</div><input type="date" id="imp-fecha" value="${wspFecha}"/></div>`+
     wspParsed.map((it,i)=>{
       const warn=it.confidence!=='alta'?`<div class="ph" style="color:#b45309;">⚠ verifica el origen — precio detectado en el texto: $${it.precio.toLocaleString('es-CL')}</div>`:'';
+      const esNuevo=!clientes.find(cl=>normTxt(cl.nombre)===normTxt(it.nombre||''));
       return`<div class="item-row imp-row" data-i="${i}" style="flex-direction:column;align-items:stretch;">
         <div class="field-row">
-          <div class="field"><div class="lbl">Cliente</div><input type="text" id="imp-cliente-${i}" value="${(it.nombre||'').replace(/"/g,'')}"/></div>
+          <div class="field">
+            <div class="lbl" style="display:flex;justify-content:space-between;align-items:center;">
+              Cliente
+              ${esNuevo&&it.nombre?`<span id="new-cli-badge-${i}" style="font-size:10px;color:#b45309;font-weight:600;">⚠ nuevo</span>`:''}
+            </div>
+            <input type="text" id="imp-cliente-${i}" value="${(it.nombre||'').replace(/"/g,'')}" oninput="checkNuevoCliente(${i},this.value)"/>
+            <div id="new-cli-form-${i}" style="display:${esNuevo&&it.nombre?'flex':'none'};gap:6px;align-items:center;margin-top:5px;flex-wrap:wrap;">
+              <input type="tel" id="new-cli-tel-${i}" placeholder="Teléfono (+569...)" style="flex:1;min-width:140px;font-size:12px;padding:4px 7px;border:1px solid #d1d5db;border-radius:5px;"/>
+              <button class="btn btn-sm btn-primary" style="font-size:11px;" onclick="quickSaveCliente(${i})">💾 Guardar cliente</button>
+              <span id="new-cli-res-${i}" style="font-size:11px;"></span>
+            </div>
+          </div>
           <div class="field"><div class="lbl">Origen</div><select id="imp-origen-${i}">${origenOptionsHtml(it.matchC?it.matchC.n:'')}</select></div>
         </div>
         <div class="field-row3">
@@ -858,6 +870,36 @@ function cancelarImportWsp(){
   document.getElementById('wsp-guardar-wrap').style.display='none';
   document.getElementById('wsp-res').innerHTML='';
   wspParsed=[];
+}
+
+function checkNuevoCliente(i, valor){
+  const existe=clientes.find(cl=>normTxt(cl.nombre)===normTxt(valor));
+  const badge=document.getElementById(`new-cli-badge-${i}`);
+  const form=document.getElementById(`new-cli-form-${i}`);
+  const res=document.getElementById(`new-cli-res-${i}`);
+  if(badge)badge.style.display=existe?'none':'inline';
+  if(form)form.style.display=(!existe&&valor.trim())?'flex':'none';
+  if(res)res.textContent='';
+}
+
+async function quickSaveCliente(i){
+  const nombre=document.getElementById(`imp-cliente-${i}`).value.trim();
+  const tel=document.getElementById(`new-cli-tel-${i}`).value.trim();
+  const res=document.getElementById(`new-cli-res-${i}`);
+  if(!nombre){res.textContent='Falta el nombre.';return;}
+  const id=Date.now();
+  try{
+    await sbInsert('clientes',{id,nombre,tel,dir:'',notas:'',creado_en:hoy()});
+    clientes.push({id,nombre,tel,dir:'',notas:'',creado_en:hoy()});
+    res.style.color='#15803d';res.textContent='✓ Guardado';
+    const badge=document.getElementById(`new-cli-badge-${i}`);
+    const form=document.getElementById(`new-cli-form-${i}`);
+    if(badge)badge.style.display='none';
+    if(form)form.style.display='none';
+  }catch(e){
+    res.style.color='#dc2626';res.textContent='Error al guardar.';
+    console.error('quickSaveCliente',e);
+  }
 }
 
 async function confirmarImportWsp(){
