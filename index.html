@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-15</div>
+  <div style="font-size:9px;opacity:.4;">V1-16</div>
 </div>
 
 <div class="container">
@@ -864,30 +864,37 @@ async function confirmarImportWsp(){
   const rows=document.querySelectorAll('#wsp-preview .imp-row');
   if(!rows.length){alert('No hay pedidos para guardar.');return;}
   const fecha=document.getElementById('imp-fecha').value||hoy(),mes=fecha.slice(0,7);
-  let kp=getKgMes(mes),guardados=0,errores=0;
-  for(let idx=0;idx<rows.length;idx++){
-    const row=rows[idx],i=row.dataset.i;
+  const kprev=getKgMes(mes);
+  // Construir todos los ítems en un único array (un pedido por ciclo)
+  const allItems=[];
+  rows.forEach(row=>{
+    const i=row.dataset.i;
     const nombre=document.getElementById(`imp-cliente-${i}`).value.trim();
     const origenN=document.getElementById(`imp-origen-${i}`).value;
     const formato=document.getElementById(`imp-molienda-${i}`).value;
     const cantidad=parseInt(document.getElementById(`imp-cant-${i}`).value)||1;
     const unidad=document.getElementById(`imp-unidad-${i}`).value;
-    if(!nombre||!origenN)continue;
-    const c=getCat(origenN);if(!c)continue;
+    if(!nombre||!origenN)return;
+    const c=getCat(origenN);if(!c)return;
     const calc=calcItemFromCat(c,unidad,cantidad);
-    const itemObj={origen:c.n,formato,cantidad,unidad,pesoKg:calc.pesoKg,precioU:calc.precioU,emp:calc.emp||0,totalKg:calc.pesoKg,totalP:calc.totalP,label:calc.label};
-    const com=calcCom(kp,itemObj.totalKg);
     const match=clientes.find(cl=>normTxt(cl.nombre)===normTxt(nombre));
     const clienteId=match?match.id:null;
-    const rowDb={id:Date.now()+idx,fecha,mes,canal:'comunidad',cliente:nombre,contacto:'',items:[itemObj],comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:clienteId};
-    try{
-      await sbInsert('pedidos',rowDb);
-      pedidos.push({id:rowDb.id,fecha,mes,canal:'comunidad',cliente:nombre,clienteId,contacto:'',cafeNombre:'',cafeContacto:'',items:[itemObj],comision:com,estado:'pendiente',codigo:''});
-      kp+=itemObj.totalKg;guardados++;
-    }catch(e){console.error('Error guardando pedido importado',nombre,e);errores++;}
+    allItems.push({origen:c.n,formato,cantidad,unidad,pesoKg:calc.pesoKg,precioU:calc.precioU,emp:calc.emp||0,totalKg:calc.pesoKg,totalP:calc.totalP,label:calc.label,clienteNombre:nombre,clienteId});
+  });
+  if(!allItems.length){alert('No se pudieron procesar los ítems.');return;}
+  const totalKgCiclo=allItems.reduce((s,it)=>s+it.totalKg,0);
+  const com=calcCom(kprev,totalKgCiclo);
+  const codigo=genCodigoVal();
+  const rowDb={id:Date.now(),fecha,mes,canal:'comunidad',cliente:allItems[0].clienteNombre,contacto:'',items:allItems,comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:allItems[0].clienteId||null,codigo};
+  try{
+    await sbInsert('pedidos',rowDb);
+    pedidos.push({id:rowDb.id,fecha,mes,canal:'comunidad',cliente:rowDb.cliente,clienteId:rowDb.cliente_id,contacto:'',cafeNombre:'',cafeContacto:'',items:allItems,comision:com,estado:'pendiente',codigo});
+    document.getElementById('wsp-res').innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div>Pedido importado — ${allItems.length} ítem(s), código ${codigo}.</div></div>`;
+    document.getElementById('wsp-text').value='';document.getElementById('wsp-preview').innerHTML='';document.getElementById('wsp-guardar-wrap').style.display='none';wspParsed=[];
+  }catch(e){
+    console.error('Error guardando pedido importado',e);
+    document.getElementById('wsp-res').innerHTML=`<div class="alert al-danger"><div class="al-ic">✗</div><div>Error al guardar. Revisa la conexión.</div></div>`;
   }
-  document.getElementById('wsp-res').innerHTML=errores?`<div class="alert al-warn"><div class="al-ic">◆</div><div>${guardados} pedido(s) guardado(s), ${errores} con error.</div></div>`:`<div class="alert al-good"><div class="al-ic">✓</div><div>${guardados} pedido(s) importado(s) y guardados.</div></div>`;
-  if(guardados){document.getElementById('wsp-text').value='';document.getElementById('wsp-preview').innerHTML='';document.getElementById('wsp-guardar-wrap').style.display='none';wspParsed=[];}
 }
 
 // ── CATÁLOGO ──────────────────────────────────────────────────────────────────
