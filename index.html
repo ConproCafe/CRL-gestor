@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-14</div>
+  <div style="font-size:9px;opacity:.4;">V1-15</div>
 </div>
 
 <div class="container">
@@ -385,21 +385,22 @@ textarea{resize:vertical;min-height:52px;}
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
 const CU=25, CB=1500, CA=2000, EMP=700, EMPP=1000;
 
-// Catálogo base actualizado desde planilla Drive (mayo 2026)
+// Catálogo base actualizado oct-2026 (nuevos precios + costos proveedor)
+// km=precio mayorista kg · gm=precio mayorista 250gr · kp=costo proveedor kg · gp=costo proveedor 250gr
 const CAT_BASE=[
-  {n:'Roma',p:'Natural',v:'80% Arábica (Catuai) / 20% Robusta',km:25300,gm:9300,ku:34000,gu:11000,perf:'Panela, chocolate, caramelo. Ideal espresso o latte.',on:true},
-  {n:'Brasil',p:'Natural',v:'100% Arábica (Catuai Amarillo)',km:26300,gm:10300,ku:36000,gu:12000,perf:'Chocolate, miel, caramelo. Cuerpo cremoso.',on:true},
-  {n:'Colombia',p:'Lavado',v:'100% Arábica (Castillo, Caturra)',km:26300,gm:10300,ku:36000,gu:12000,perf:'Nueces, chocolate amargo, frutos rojos. Acidez media-baja.',on:true},
-  {n:'Perú',p:'Lavado',v:'100% Arábica (Catimor)',km:26700,gm:10600,ku:37000,gu:12500,perf:'Chocolate amargo, avellanas, cuerpo cremoso.',on:true},
-  {n:'Bolivia',p:'Lavado',v:'100% Arábica (Catuai rojo, Typica, Caturra)',km:26700,gm:10600,ku:37000,gu:12500,perf:'Naranja dulce, avellana y caramelo.',on:true,nuevo:true},
-  {n:'Pink Bourbon',p:'Lavado',v:'100% Arábica (Bourbon Rosado)',km:32000,gm:11500,ku:42000,gu:14000,perf:'Caramelo, frutos amarillos, pomelo, durazno. Acidez brillante.',on:true,nuevo:true},
-  {n:'Etiopía',p:'Natural',v:'100% Arábica (Heirloom Wild)',km:32700,gm:11600,ku:42500,gu:14100,perf:'Pomelo, melocotón, cacao y nuez moscada.',on:true},
-  {n:'Decaf Colombia',p:'Lavado',v:'100% Arábica (Caturra)',km:32000,gm:11500,ku:42000,gu:14000,perf:'Descafeinado. Notas de chocolate y cuerpo suave.',on:true},
-  {n:'Guatemala',p:'Lavado',v:'100% Arábica (Catuai, Bourbon)',km:28500,gm:11100,ku:38000,gu:13000,perf:'Azúcar morena, cacao, caramelo, ciruela.',on:false},
-  {n:'Honduras',p:'Lavado',v:'100% Arábica (Icatu)',km:28500,gm:11100,ku:38000,gu:13000,perf:'Dulce, caramelo, cítrico frutal.',on:false},
-  {n:'Ruanda',p:'Lavado',v:'100% Arábica (Bourbon Rojo)',km:32700,gm:11600,ku:42500,gu:14100,perf:'Caramelo, naranja, canela, durazno.',on:false},
-  {n:'Caturra-Chiroso',p:'Lavado',v:'100% Arábica (Caturra, Chiroso)',km:32000,gm:11500,ku:42000,gu:14000,perf:'',on:false},
-  {n:'Geisha',p:'Lavado',v:'100% Arábica (Geisha)',km:48000,gm:13300,ku:55000,gu:15500,perf:'Limoncillo, mandarina, pomelo. Acidez málica.',on:false},
+  {n:'Roma',p:'Natural',v:'80% Arábica (Catuai) / 20% Robusta',km:27500,gm:10450,kp:26500,gp:10000,ku:34000,gu:11000,perf:'Panela, chocolate, caramelo. Ideal espresso o latte.',on:true},
+  {n:'Brasil',p:'Natural',v:'100% Arábica (Catuai Amarillo)',km:28500,gm:11500,kp:27500,gp:11000,ku:36000,gu:12000,perf:'Chocolate, miel, caramelo. Cuerpo cremoso.',on:true},
+  {n:'Colombia',p:'Lavado',v:'100% Arábica (Castillo, Caturra)',km:28500,gm:11500,kp:27500,gp:11000,ku:36000,gu:12000,perf:'Nueces, chocolate amargo, frutos rojos. Acidez media-baja.',on:true},
+  {n:'Perú',p:'Lavado',v:'100% Arábica (Catimor)',km:29000,gm:11700,kp:28000,gp:11000,ku:37000,gu:12500,perf:'Chocolate amargo, avellanas, cuerpo cremoso.',on:true},
+  {n:'Bolivia',p:'Lavado',v:'100% Arábica (Catuai rojo, Typica, Caturra)',km:29500,gm:12000,kp:28000,gp:11000,ku:37000,gu:12500,perf:'Naranja dulce, avellana y caramelo.',on:true,nuevo:true},
+  {n:'Pink Bourbon',p:'Lavado',v:'100% Arábica (Bourbon Rosado)',km:33000,gm:13500,kp:32000,gp:11500,ku:42000,gu:14000,perf:'Caramelo, frutos amarillos, pomelo, durazno. Acidez brillante.',on:true,nuevo:true},
+  {n:'Etiopía',p:'Natural',v:'100% Arábica (Heirloom Wild)',km:35500,gm:13500,kp:34000,gp:12500,ku:42500,gu:14100,perf:'Pomelo, melocotón, cacao y nuez moscada.',on:true},
+  {n:'Decaf Colombia',p:'Lavado',v:'100% Arábica (Caturra)',km:35000,gm:13000,kp:33500,gp:12000,ku:42000,gu:14000,perf:'Descafeinado. Notas de chocolate y cuerpo suave.',on:true},
+  {n:'Guatemala',p:'Lavado',v:'100% Arábica (Catuai, Bourbon)',km:31000,gm:12300,kp:29500,gp:11500,ku:38000,gu:13000,perf:'Azúcar morena, cacao, caramelo, ciruela.',on:false},
+  {n:'Honduras',p:'Lavado',v:'100% Arábica (Icatu)',km:29000,gm:12000,kp:28000,gp:11000,ku:38000,gu:13000,perf:'Dulce, caramelo, cítrico frutal.',on:false},
+  {n:'Ruanda',p:'Lavado',v:'100% Arábica (Bourbon Rojo)',km:35500,gm:13500,kp:34000,gp:12500,ku:42500,gu:14100,perf:'Caramelo, naranja, canela, durazno.',on:false},
+  {n:'Caturra-Chiroso',p:'Honey',v:'100% Arábica (Caturra, Chiroso)',km:36500,gm:15000,kp:35000,gp:13000,ku:42000,gu:14000,perf:'',on:false},
+  {n:'Geisha',p:'Lavado',v:'100% Arábica (Geisha)',km:48000,gm:14500,kp:48000,gp:13300,ku:55000,gu:15500,perf:'Limoncillo, mandarina, pomelo. Acidez málica.',on:false},
 ];
 
 const COLORS={Roma:'#3266ad',Brasil:'#e8823a',Colombia:'#a14fae','Pink Bourbon':'#e91e8c',Perú:'#5bab6e',Bolivia:'#D4A017',Guatemala:'#8e6b3e',Honduras:'#6B7280',Etiopía:'#c0392b',Ruanda:'#16a085','Caturra-Chiroso':'#0891B2',Geisha:'#7C3AED','Decaf Colombia':'#64748B'};
@@ -423,8 +424,8 @@ async function sbDelete(t,match){return sb(`${t}?${match}`,{method:'DELETE'});}
 let pedidos=[], cat=[], items=[], uAct='kg', clientes=[];
 const MES_ACTUAL=new Date().toISOString().slice(0,7);
 
-function normCat(row){return{n:row.n,p:row.p,v:row.v,km:row.km,gm:row.gm,ku:row.ku,gu:row.gu,perf:row.perf,on:row.on_stock,nuevo:row.nuevo,bm:row.bm,bkg:row.bkg?parseFloat(row.bkg):null};}
-function denormCat(c){return{n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,ku:c.ku,gu:c.gu,perf:c.perf,on_stock:c.on,nuevo:!!c.nuevo,bm:c.bm||null,bkg:c.bkg||null};}
+function normCat(row){return{n:row.n,p:row.p,v:row.v,km:row.km,gm:row.gm,kp:row.kp||0,gp:row.gp||0,ku:row.ku,gu:row.gu,perf:row.perf,on:row.on_stock,nuevo:row.nuevo,bm:row.bm,bkg:row.bkg?parseFloat(row.bkg):null};}
+function denormCat(c){return{n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,kp:c.kp||0,gp:c.gp||0,ku:c.ku,gu:c.gu,perf:c.perf,on_stock:c.on,nuevo:!!c.nuevo,bm:c.bm||null,bkg:c.bkg||null};}
 
 async function load(){
   try{
@@ -665,12 +666,37 @@ function genDoc(p){
   t+=`Total kg: ${tkg.toFixed(2)} kg\nSubtotal: $${sub.toLocaleString('es-CL')}\n`;
   if(del)t+=`Delivery: $3.500\n`;
   t+=`TOTAL: $${(sub+del).toLocaleString('es-CL')} (IVA incl.)\n`;
-  // Nota tramo comisiones
+  // ── COMISIÓN (tramo) ──
   const kprev=typeof p._kprev==='number'?p._kprev:0;
   const kn=tkg;
-  if(kprev<CU&&kprev+kn>CU){const kT1=CU-kprev,kT2=kn-kT1;t+=`${'─'.repeat(56)}\nCOMISIÓN (tramo)\nKg 1–${CU} (hasta completar 25 kg): $1.500/kg × ${kT1.toFixed(2)} kg = $${(CB*kT1).toLocaleString('es-CL')}\nKg ${CU+1} en adelante: $2.000/kg × ${kT2.toFixed(2)} kg = $${(CA*kT2).toLocaleString('es-CL')}\n`;}
-  else if(kprev>=CU){t+=`${'─'.repeat(56)}\nCOMISIÓN: $2.000/kg (tramo alto activo) × ${kn.toFixed(2)} kg = $${(CA*kn).toLocaleString('es-CL')}\n`;}
-  else{t+=`${'─'.repeat(56)}\nCOMISIÓN: $1.500/kg × ${kn.toFixed(2)} kg = $${(CB*kn).toLocaleString('es-CL')}\n`;}
+  let comTotal=0;
+  t+=`${'─'.repeat(56)}\nCOMISIÓN\n`;
+  if(kprev<CU&&kprev+kn>CU){
+    const kT1=CU-kprev,kT2=kn-kT1;
+    comTotal=CB*kT1+CA*kT2;
+    t+=`Kg 1–${CU} (tramo bajo): $1.500/kg × ${kT1.toFixed(2)} kg = $${(CB*kT1).toLocaleString('es-CL')}\n`;
+    t+=`Kg ${CU+1}+ (tramo alto): $2.000/kg × ${kT2.toFixed(2)} kg = $${(CA*kT2).toLocaleString('es-CL')}\n`;
+    t+=`Total comisión: $${comTotal.toLocaleString('es-CL')}\n`;
+  } else if(kprev>=CU){
+    comTotal=CA*kn;
+    t+=`Tramo alto activo (>25 kg): $2.000/kg × ${kn.toFixed(2)} kg = $${comTotal.toLocaleString('es-CL')}\n`;
+  } else {
+    comTotal=CB*kn;
+    t+=`Tramo bajo (≤25 kg): $1.500/kg × ${kn.toFixed(2)} kg = $${comTotal.toLocaleString('es-CL')}\n`;
+  }
+  // ── MARGEN PRECIO Y GANANCIA TOTAL ──
+  // Calcular margen precio por ítem usando kp del catálogo
+  let margenPrecioTotal=0;
+  p.items.forEach(it=>{
+    const c=cat.find(x=>x.n===it.origen)||{kp:0,gp:0};
+    const kp=it.unidad==='250g'||it.unidad==='250gp'?c.gp:c.kp;
+    const mp=(it.precioU-kp)*it.totalKg;
+    margenPrecioTotal+=mp;
+  });
+  const gananciaTotal=margenPrecioTotal+comTotal;
+  t+=`${'─'.repeat(56)}\nMARGEN PRECIO: $${margenPrecioTotal.toLocaleString('es-CL')}\n`;
+  t+=`COMISIÓN: $${comTotal.toLocaleString('es-CL')}\n`;
+  t+=`GANANCIA TOTAL: $${gananciaTotal.toLocaleString('es-CL')}\n`;
   t+=`${'─'.repeat(56)}\nGenerado por CRL Gestor de Pedidos · Canal WhatsApp Mayorista\n`;
   return t;
 }
