@@ -884,7 +884,7 @@ async function confirmarImportWsp(){
   if(!allItems.length){alert('No se pudieron procesar los ítems.');return;}
   const totalKgCiclo=allItems.reduce((s,it)=>s+it.totalKg,0);
   const com=calcCom(kprev,totalKgCiclo);
-  const codigo=genCodigoVal();
+  const codigo=genCodigo();
   const rowDb={id:Date.now(),fecha,mes,canal:'comunidad',cliente:allItems[0].clienteNombre,contacto:'',items:allItems,comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:allItems[0].clienteId||null,codigo};
   try{
     await sbInsert('pedidos',rowDb);
