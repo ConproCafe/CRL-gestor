@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-23</div>
+  <div style="font-size:9px;opacity:.4;">V1-24</div>
 </div>
 
 <div class="container">
@@ -1224,11 +1224,15 @@ function renderHist(){
           <button class="btn btn-sm btn-danger" onclick="delPedido('${p.id}','${mes}')">Eliminar</button>
         </div></div>`;
     }).join('');
+    const po={};ps.forEach(p=>p.items.forEach(i=>{po[i.origen]=(po[i.origen]||0)+i.totalKg;}));
+    const mx=Math.max(...Object.values(po),1);
+    const barras=Object.entries(po).sort((a,b)=>b[1]-a[1]).map(([o,k])=>`<div><div class="ob-lbl"><span>${o}</span><span>${k.toFixed(2)} kg</span></div><div class="ob-track"><div class="ob-fill" style="width:${Math.round(k/mx*100)}%;background:${COLORS[o]||'#888'};"></div></div></div>`).join('');
     return`<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleMes('${mes}')">
         <div><div style="font-size:13px;font-weight:500;">${mes}</div><div style="font-size:11px;color:#6b7280;">${ps.length} pedidos · ${kg.toFixed(2)} kg · $${Math.round(m/1000)}K · Comisión $${com.toLocaleString('es-CL')}</div></div>
         <span id="mes-arrow-${mes}" style="font-size:11px;color:#9ca3af;">▾ ver</span>
       </div>
+      <div style="margin-top:8px;">${barras}</div>
       <div id="mes-detalle-${mes}" style="display:none;margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">${filas}</div>
     </div>`;
   }).join('');
