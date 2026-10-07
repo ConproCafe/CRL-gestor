@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-18</div>
+  <div style="font-size:9px;opacity:.4;">V1-19</div>
 </div>
 
 <div class="container">
@@ -824,7 +824,8 @@ function renderWspPreview(){
   el.innerHTML=`<div class="field" style="margin-bottom:10px;"><div class="lbl">Fecha del pedido</div><input type="date" id="imp-fecha" value="${wspFecha}"/></div>`+
     wspParsed.map((it,i)=>{
       const warn=it.confidence!=='alta'?`<div class="ph" style="color:#b45309;">⚠ verifica el origen — precio detectado en el texto: $${it.precio.toLocaleString('es-CL')}</div>`:'';
-      const esNuevo=!clientes.find(cl=>normTxt(cl.nombre)===normTxt((it.nombre||'').trim()));
+      const _n=normTxt((it.nombre||'').trim());
+      const esNuevo=!clientes.find(cl=>{const _c=normTxt(cl.nombre);return _c===_n||_c.includes(_n)||_n.includes(_c);});
       return`<div class="item-row imp-row" data-i="${i}" style="flex-direction:column;align-items:stretch;">
         <div class="field-row">
           <div class="field">
@@ -872,7 +873,7 @@ function cancelarImportWsp(){
 }
 
 function checkNuevoCliente(i, valor){
-  const existe=clientes.find(cl=>normTxt(cl.nombre)===normTxt(valor));
+  const _v=normTxt(valor);const existe=clientes.find(cl=>{const _c=normTxt(cl.nombre);return _c===_v||_c.includes(_v)||_v.includes(_c);});
   const badge=document.getElementById(`new-cli-badge-${i}`);
   const form=document.getElementById(`new-cli-form-${i}`);
   const res=document.getElementById(`new-cli-res-${i}`);
