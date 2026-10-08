@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-24</div>
+  <div style="font-size:9px;opacity:.4;">V1-25</div>
 </div>
 
 <div class="container">
@@ -759,12 +759,15 @@ function parseWhatsApp(txt){
     const dashIdx=prodLine.lastIndexOf(' - ');
     if(dashIdx>-1){origenParte=prodLine.slice(0,dashIdx);moliendaTxt=prodLine.slice(dashIdx+3);}
     let origenTxt=origenParte.trim(),cantidad=1,unidad='kg';
-    const xMatch=origenParte.match(/^(.*?)\s+x\s+(\d+)\s*(2\s*[x×]\s*500\s*gr?|kgs?|k\b|250\s*gr?|grs?|g\b)/i);
-    if(xMatch){
+    // Caso especial: "x 250 Gr" o "x 250gr" sin número de cantidad previo → 1 paquete 250g
+    const x250Match=origenParte.match(/^(.*?)\s+x\s+250\s*gr?s?\b/i);
+    const xMatch=x250Match?null:origenParte.match(/^(.*?)\s+x\s+(\d+)\s*(2\s*[x×]\s*500\s*gr?|kgs?|k\b|grs?|g\b)/i);
+    if(x250Match){
+      origenTxt=x250Match[1].trim();unidad='250g';cantidad=1;
+    } else if(xMatch){
       origenTxt=xMatch[1].trim();
       const u=xMatch[3].toLowerCase();
       if(/2\s*[x×]\s*500/.test(u)){unidad='2x500';cantidad=parseInt(xMatch[2],10);}
-      else if(/250\s*gr?/i.test(u)){unidad='250g';cantidad=1;} // x 250 Gr → 1 paquete, el 250 es presentación no cantidad
       else if(/kg|k\b/.test(u)){unidad='kg';cantidad=parseInt(xMatch[2],10);}
       else{unidad='250g';cantidad=parseInt(xMatch[2],10);}
     }
