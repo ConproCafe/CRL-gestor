@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-26</div>
+  <div style="font-size:9px;opacity:.4;">V1-27</div>
 </div>
 
 <div class="container">
@@ -167,10 +167,9 @@ textarea{resize:vertical;min-height:52px;}
   <div class="field" style="margin-bottom:8px;"><div class="lbl">Proveedor</div>
     <select id="proveedor" data-prev="1" onchange="onProvChange()">
       <option value="1">CRL — Coffee Roasting Labs</option>
-      <option value="2">La Ruta del Café</option>
     </select>
   </div>
-  <div id="lr-info" class="alert al-info" style="display:none;"><div class="al-ic">☕</div><div>La Ruta del Café · solo 1 kg, tueste medio. Mínimo 3 kg para pedir · precio meta desde 6 kg por pedido · meta mensual 10 kg.</div></div>
+  <div id="prov-info" class="alert al-info" style="display:none;"><div class="al-ic">☕</div><div id="prov-info-txt"></div></div>
   <div class="field-row">
     <div class="field"><div class="lbl">Canal</div>
       <select id="canal" onchange="onCanalChange()">
@@ -389,11 +388,34 @@ textarea{resize:vertical;min-height:52px;}
 
 <script>
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
-const CU=25, CB=1500, CA=2000, EMP=700, EMPP=1000;
-// La Ruta del Café (proveedor 2): margen fijo, sin comisión. kp = costo kg con IVA.
-const LR=2, LR_META_MES=10, LR_MIN=3, LR_UMBRAL=6, LR_DESC=500, IVA=1.19;
-function lrTarifa(kg){if(kg<=0)return 0;if(kg<=1)return 3614;if(kg<=3)return 3926;if(kg<=4)return 4447;if(kg<=5)return 4962;return Math.round(4962+(kg-5)*(5901-4962)/10);}
-const CATEG={'Perú Satipo':'Especialidad','Bolivia Caranavi':'Especialidad','Honduras Comayagua':'Café de origen','Blend Espresso Clásico 70/30':'Blend para espresso'};
+// Comisión por tramos (CRL): valores por defecto; se sobrescriben con la fila 'tramos' de la tabla proveedores.
+let CU=25, CB=1500, CA=2000;
+const EMP=700, EMPP=1000, IVA=1.19;
+// Reglas de proveedores de margen fijo (mínimo, umbral/descuento, meta, despacho, formato, encabezado OC)
+// viven en la tabla proveedores. Sumar un proveedor = insertar una fila + su catálogo. kp = costo kg con IVA.
+let provs=[];
+const numOrNull=v=>v==null||v===''?null:parseFloat(v);
+function normProv(r){return{id:r.id,nombre:r.nombre,tipo:r.tipo_margen,cu:r.cu,cb:r.cb,ca:r.ca,activo:r.activo,
+  min:numOrNull(r.minimo_kg),umbral:numOrNull(r.umbral_kg),desc:r.descuento_kg||0,meta:numOrNull(r.meta_kg),periodo:r.meta_periodo||'mes',
+  tramos:(Array.isArray(r.despacho_tramos)?r.despacho_tramos:[]).map(t=>({hasta:+t.hasta,precio:+t.precio})).sort((a,b)=>a.hasta-b.hasta),
+  extraKg:+r.despacho_extra_kg||0,formato:r.formato||'1 kg',fkg:+r.formato_kg||1,ocEnc:r.oc_encabezado||''};}
+function getProv(id){return provs.find(p=>p.id===id)||null;}
+function esFijo(id){const p=getProv(id);return!!p&&p.tipo==='fijo';}
+function tieneDesc(pv){return!!pv&&pv.umbral!=null&&pv.desc>0;}
+function tarifaDesp(pv,kg){
+  if(!pv||kg<=0||!pv.tramos.length)return 0;
+  for(const t of pv.tramos)if(kg<=t.hasta)return t.precio;
+  const u=pv.tramos[pv.tramos.length-1];return Math.round(u.precio+(kg-u.hasta)*pv.extraKg);
+}
+function periodoTxt(pv){return pv.periodo==='mes'?'mensual':'por '+pv.periodo;}
+function provInfoTxt(pv){
+  const t=[`${pv.nombre} · solo ${pv.formato}`];
+  if(pv.min)t.push(`Mínimo ${pv.min} kg para pedir`);
+  if(tieneDesc(pv))t.push(`precio meta desde ${pv.umbral} kg por pedido (−$${pv.desc.toLocaleString('es-CL')}/kg)`);
+  if(pv.meta)t.push(`meta ${periodoTxt(pv)} ${pv.meta} kg`);
+  if(!pv.tramos.length)t.push('⚠ despacho sin tarifa cargada');
+  return t.join(' · ')+'.';
+}
 
 // Catálogo base actualizado oct-2026 (nuevos precios + costos proveedor)
 // km=precio mayorista kg · gm=precio mayorista 250gr · kp=costo proveedor kg · gp=costo proveedor 250gr
@@ -434,12 +456,14 @@ async function sbDelete(t,match){return sb(`${t}?${match}`,{method:'DELETE'});}
 let pedidos=[], cat=[], items=[], uAct='kg', clientes=[];
 const MES_ACTUAL=new Date().toISOString().slice(0,7);
 
-function normCat(row){return{n:row.n,p:row.p,v:row.v,km:row.km,gm:row.gm,kp:row.kp||0,gp:row.gp||0,ku:row.ku,gu:row.gu,perf:row.perf,on:row.on_stock,nuevo:row.nuevo,bm:row.bm,bkg:row.bkg?parseFloat(row.bkg):null,prov:row.proveedor_id||1};}
-function denormCat(c){return{n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,kp:c.kp||0,gp:c.gp||0,ku:c.ku,gu:c.gu,perf:c.perf,on_stock:c.on,nuevo:!!c.nuevo,bm:c.bm||null,bkg:c.bkg||null,proveedor_id:c.prov||1};}
+function normCat(row){return{n:row.n,p:row.p,v:row.v,km:row.km,gm:row.gm,kp:row.kp||0,gp:row.gp||0,ku:row.ku,gu:row.gu,perf:row.perf,on:row.on_stock,nuevo:row.nuevo,bm:row.bm,bkg:row.bkg?parseFloat(row.bkg):null,prov:row.proveedor_id||1,cat:row.categoria||''};}
+function denormCat(c){return{n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,kp:c.kp||0,gp:c.gp||0,ku:c.ku,gu:c.gu,perf:c.perf,on_stock:c.on,nuevo:!!c.nuevo,bm:c.bm||null,bkg:c.bkg||null,proveedor_id:c.prov||1,categoria:c.cat||null};}
 
 async function load(){
   try{
-    const[peds,catRows,clis]=await Promise.all([sbSelect('pedidos','&order=created_at.asc'),sbSelect('catalogo','&order=n.asc'),sbSelect('clientes','&order=creado_en.asc')]);
+    const[peds,catRows,clis,provRows]=await Promise.all([sbSelect('pedidos','&order=created_at.asc'),sbSelect('catalogo','&order=n.asc'),sbSelect('clientes','&order=creado_en.asc'),sbSelect('proveedores','&order=id.asc')]);
+    provs=provRows.map(normProv);
+    const tr=provs.find(p=>p.tipo==='tramos');if(tr){CU=tr.cu;CB=tr.cb;CA=tr.ca;}
     pedidos=peds.map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:p.cliente,clienteId:p.cliente_id||null,contacto:p.contacto||'',cafeNombre:p.cafe_nombre||'',cafeContacto:p.cafe_contacto||'',items:p.items||[],comision:p.comision||0,estado:p.estado||'pendiente',codigo:p.codigo||'',prov:p.proveedor_id||1}));
     cat=catRows.map(normCat);
     clientes=clis.map(c=>({id:c.id,nombre:c.nombre,tel:c.tel||'',dir:c.dir||'',notas:c.notas||'',creado:c.creado_en||''}));
@@ -449,27 +473,35 @@ async function savePeds(){/* no-op: cada operación de pedido ya escribe directo
 async function saveCatData(){/* no-op: addOrigen/togCat escriben directo */}
 
 function provAct(){const el=document.getElementById('proveedor');return el?parseInt(el.value)||1:1;}
-function esLR(){return provAct()===LR;}
+function esFijoAct(){return esFijo(provAct());}
 const catCRL=()=>cat.filter(c=>c.prov===1);
+function fillProveedores(){
+  const sel=document.getElementById('proveedor'),cur=provAct();
+  const lista=provs.filter(p=>p.activo||p.id===cur);if(!lista.length)return;
+  sel.innerHTML=lista.map(p=>`<option value="${p.id}">${p.id===1?'CRL — Coffee Roasting Labs':p.nombre}</option>`).join('');
+  sel.value=lista.some(p=>p.id===cur)?cur:lista[0].id;sel.dataset.prev=sel.value;
+}
 function onProvChange(){
   const sel=document.getElementById('proveedor');
   if(items.length&&!confirm('Cambiar de proveedor borra los ítems de este pedido. ¿Continuar?')){sel.value=sel.dataset.prev;return;}
   sel.dataset.prev=sel.value;items=[];renderItems();
-  document.getElementById('lr-info').style.display=esLR()?'flex':'none';
+  const pv=getProv(provAct()),fijo=esFijoAct();
+  document.getElementById('prov-info').style.display=fijo?'flex':'none';
+  if(fijo)document.getElementById('prov-info-txt').textContent=provInfoTxt(pv);
   document.getElementById('origen').value='';fillOrigen();onOrigenChange();
   document.getElementById('doc-sec').style.display='none';
 }
-// Precio La Ruta: base, o meta si el pedido llega a LR_UMBRAL kg
-function aplicarPrecioLR(arr){
-  const tkg=arr.reduce((s,i)=>s+i.totalKg,0),meta=tkg>=LR_UMBRAL;
-  arr.forEach(i=>{const c=getCat(i.origen);if(!c)return;i.precioU=meta?c.km-LR_DESC:c.km;i.totalP=i.precioU*i.cantidad;});
+// Precio margen fijo: base, o precio meta (km − descuento) si el pedido llega al umbral del proveedor
+function aplicarPrecioFijo(arr,pv){
+  const tkg=arr.reduce((s,i)=>s+i.totalKg,0),meta=tieneDesc(pv)&&tkg>=pv.umbral;
+  arr.forEach(i=>{const c=getCat(i.origen);if(!c)return;i.precioU=meta?c.km-pv.desc:c.km;i.totalP=i.precioU*i.cantidad;});
   return meta;
 }
-// Margen neto La Ruta: venta sin IVA − costo neto − despacho neto
-function margenLR(arr){
+// Margen neto margen fijo: venta sin IVA − costo neto − despacho neto
+function margenFijo(arr,pv){
   const tkg=arr.reduce((s,i)=>s+i.totalKg,0);
   const venta=arr.reduce((s,i)=>s+i.totalP,0),costo=arr.reduce((s,i)=>{const c=getCat(i.origen);return s+(c?c.kp*i.totalKg:0);},0);
-  const env=lrTarifa(tkg);
+  const env=tarifaDesp(pv,tkg);
   return{tkg,venta,costo,env,margen:Math.round((venta-costo-env)/IVA)};
 }
 function hoy(){return new Date().toISOString().split('T')[0];}
@@ -553,7 +585,7 @@ function selU(el){
 
 function getPU(){
   const n=document.getElementById('origen').value,c=getCat(n);if(!c)return null;
-  if(c.prov===LR)return{precio:c.km,pesoKg:1,label:'1 kg · tueste medio',emp:0,unit:c.ku};
+  if(esFijo(c.prov)){const pv=getProv(c.prov);return{precio:c.km,pesoKg:pv.fkg,label:pv.formato,emp:0,unit:c.ku};}
   if(c.bkg){return{precio:c.km,pesoKg:c.bkg,label:`Balde ${c.bkg} kg`,emp:0,unit:c.ku||c.km};}
   if(uAct==='kg')return{precio:c.km,pesoKg:1,label:'1 kg',emp:0,unit:c.ku};
   if(uAct==='2x500')return{precio:c.km+EMP,pesoKg:1,label:'2×500 gr',emp:EMP,unit:c.ku+EMP};
@@ -563,7 +595,7 @@ function getPU(){
 
 function onOrigenChange(){
   const c=getCat(document.getElementById('origen').value);
-  document.getElementById('upills').style.display=(c&&c.bkg)||esLR()?'none':'flex';
+  document.getElementById('upills').style.display=(c&&c.bkg)||esFijoAct()?'none':'flex';
   document.getElementById('cant-lbl').textContent=c&&c.bkg?'(nº de baldes)':uAct==='kg'?'(nº de kilos)':uAct==='2x500'?'(nº de paquetes dobles)':uAct==='250gp'?'(nº de envases premium 250gr)':'(nº de fracciones 250gr)';
   updHint();updRI();
 }
@@ -572,7 +604,7 @@ function updHint(){
   const n=document.getElementById('origen').value,c=getCat(n),ph=document.getElementById('ph');
   if(!c){ph.innerHTML='';return;}
   const pu=getPU();if(!pu){ph.innerHTML='';return;}
-  if(c.prov===LR){ph.innerHTML=`$${c.km.toLocaleString('es-CL')}/kg · <span style="color:#15803d;">$${(c.km-LR_DESC).toLocaleString('es-CL')} si el pedido llega a ${LR_UMBRAL} kg</span> · Directo en La Ruta: $${c.ku.toLocaleString('es-CL')}`;return;}
+  if(esFijo(c.prov)){const pv=getProv(c.prov);ph.innerHTML=`$${c.km.toLocaleString('es-CL')}/kg${tieneDesc(pv)?` · <span style="color:#15803d;">$${(c.km-pv.desc).toLocaleString('es-CL')} si el pedido llega a ${pv.umbral} kg</span>`:''}${c.ku?` · Directo en ${pv.nombre}: $${c.ku.toLocaleString('es-CL')}`:''}`;return;}
   if(c.bkg){const d=desc(c.ku||c.km,c.km);ph.innerHTML=`$${pu.precio.toLocaleString('es-CL')} total · $${Math.round(c.km/c.bkg).toLocaleString('es-CL')}/kg × ${c.bkg} kg${c.ku?` <span style="color:#15803d;font-size:9px;">−${d}% vs precio unitario</span>`:''}`;return;}
   const d=uAct==='kg'?desc(c.ku,c.km):uAct==='250g'?desc(c.gu,c.gm):null;
   const dt=d?` <span style="color:#15803d;font-size:9px;">−${d}% vs precio normal</span>`:'';
@@ -639,18 +671,18 @@ function renderItems(){
     <div class="idet" style="font-weight:500;">$${it.totalP.toLocaleString('es-CL')}${it.emp?` <span style="font-size:9px;color:#6d28d9">(+$${(it.emp*it.cantidad).toLocaleString('es-CL')})</span>`:''}</div>
     <button class="btn btn-sm btn-danger" onclick="rmItem(${i})">×</button>
   </div>`).join('');
-  const lr=esLR(),metaLR=lr?aplicarPrecioLR(items):false;
+  const pvA=getProv(provAct()),lr=esFijoAct(),metaLR=lr?aplicarPrecioFijo(items,pvA):false;
   if(lr)l.querySelectorAll('.item-row').forEach((row,i)=>{row.children[4].textContent='$'+items[i].totalP.toLocaleString('es-CL');});
   const canal=document.getElementById('canal').value,del=canal==='cafeteria'?3500:0;
   const sub=items.reduce((s,i)=>s+i.totalP,0),tkg=items.reduce((s,i)=>s+i.totalKg,0);
   let lrHtml='';
   if(lr){
-    const m=margenLR(items),kgMes=getKgMes((document.getElementById('fecha').value||hoy()).slice(0,7),LR);
-    lrHtml=`<div class="srow"><span class="slb">Precio La Ruta</span><span class="svl">${metaLR?'Meta (−$'+LR_DESC+'/kg) ✓':'Base · faltan '+(LR_UMBRAL-tkg).toFixed(2)+' kg para precio meta'}</span></div>
-    <div class="srow"><span class="slb">Pagas a La Ruta (café + despacho)</span><span class="svl">$${Math.round(m.costo+m.env).toLocaleString('es-CL')}</span></div>
+    const m=margenFijo(items,pvA),kgMes=getKgMes((document.getElementById('fecha').value||hoy()).slice(0,7),pvA.id);
+    lrHtml=`${tieneDesc(pvA)?`<div class="srow"><span class="slb">Precio ${pvA.nombre}</span><span class="svl">${metaLR?'Meta (−$'+pvA.desc.toLocaleString('es-CL')+'/kg) ✓':'Base · faltan '+(pvA.umbral-tkg).toFixed(2)+' kg para precio meta'}</span></div>`:''}
+    <div class="srow"><span class="slb">Pagas a ${pvA.nombre} (café + despacho)</span><span class="svl">$${Math.round(m.costo+m.env).toLocaleString('es-CL')}${pvA.tramos.length?'':' + despacho s/tarifa'}</span></div>
     <div class="srow"><span class="slb">Margen neto estimado</span><span class="svl">$${m.margen.toLocaleString('es-CL')}</span></div>
-    <div class="srow"><span class="slb">Meta mensual La Ruta</span><span class="svl">${(kgMes+tkg).toFixed(2)} de ${LR_META_MES} kg con este pedido</span></div>
-    ${tkg<LR_MIN?`<div class="alert al-warn" style="margin-top:8px;"><div class="al-ic">◆</div><div>Bajo el mínimo de ${LR_MIN} kg. Espera al próximo cierre o completa con kilos propios.</div></div>`:''}`;
+    ${pvA.meta?`<div class="srow"><span class="slb">Meta ${periodoTxt(pvA)} ${pvA.nombre}</span><span class="svl">${(kgMes+tkg).toFixed(2)} de ${pvA.meta} kg con este pedido</span></div>`:''}
+    ${pvA.min&&tkg<pvA.min?`<div class="alert al-warn" style="margin-top:8px;"><div class="al-ic">◆</div><div>Bajo el mínimo de ${pvA.min} kg. Espera al próximo cierre o completa con kilos propios.</div></div>`:''}`;
   }
   const temp=items.reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
   document.getElementById('items-wrap').style.display='block';
@@ -674,18 +706,18 @@ async function savePedido(){
 
   if(canal==='cafeteria'){
     const cli=document.getElementById('cafe-nombre').value,con=document.getElementById('cafe-contacto').value;
-    const pv=provAct(),kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=pv===1?calcCom(kp,kn):0;
+    const pv=provAct(),kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=getProv(pv)?.tipo==='tramos'?calcCom(kp,kn):0;
     const row={id:Date.now(),fecha,mes,canal,cliente:cli,contacto:con,items:[...items],comision:com,estado:'pendiente',cafe_nombre:cli,cafe_contacto:con,cliente_id:null,codigo,proveedor_id:pv};
     try{
       await sbInsert('pedidos',row);
       pedidos.push({id:row.id,fecha,mes,canal,cliente:cli,clienteId:null,contacto:con,cafeNombre:cli,cafeContacto:con,items:[...items],comision:com,estado:'pendiente',codigo,prov:pv});
-      alert(`✅ Pedido B2B guardado.\nCódigo: ${codigo}${pv===LR?'\nProveedor: La Ruta del Café':''}\nComisión: $${com.toLocaleString('es-CL')}`);limpiar();
+      alert(`✅ Pedido B2B guardado.\nCódigo: ${codigo}${esFijo(pv)?'\nProveedor: '+getProv(pv).nombre:''}\nComisión: $${com.toLocaleString('es-CL')}`);limpiar();
     }catch(e){alert('Error guardando en Supabase.');}
     return;
   }
 
   // Comunidad: un solo registro con todos los ítems individualizados por cliente
-  const pv=provAct(),kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=pv===1?calcCom(kp,kn):0;
+  const pv=provAct(),kp=getKgMes(mes),kn=items.reduce((s,i)=>s+i.totalKg,0),com=getProv(pv)?.tipo==='tramos'?calcCom(kp,kn):0;
   const clientes_ciclo=[...new Set(items.map(i=>i.clienteNombre).filter(Boolean))].join(', ');
   const row={id:Date.now(),fecha,mes,canal:'comunidad',cliente:clientes_ciclo||'Ciclo comunidad',contacto:'',items:[...items],comision:com,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:null,codigo,proveedor_id:pv};
   try{
@@ -693,16 +725,17 @@ async function savePedido(){
     pedidos.push({...row,clienteId:null,cafeNombre:'',cafeContacto:'',prov:pv});
     const kt=getKgMes(mes);
     let msg=`✅ Ciclo guardado.\nCódigo: ${codigo}\n${items.length} ítem(s) · ${kn.toFixed(2)} kg\nComisión: $${com.toLocaleString('es-CL')}`;
-    if(pv===LR)msg=`✅ Pedido La Ruta guardado.\nCódigo: ${codigo}\n${kn.toFixed(2)} kg · Meta mensual: ${getKgMes(mes,LR).toFixed(2)} de ${LR_META_MES} kg`;
+    if(esFijo(pv)){const P=getProv(pv);msg=`✅ Pedido ${P.nombre} guardado.\nCódigo: ${codigo}\n${kn.toFixed(2)} kg${P.meta?` · Meta ${periodoTxt(P)}: ${getKgMes(mes,pv).toFixed(2)} de ${P.meta} kg`:''}`;}
     else if(kp<CU&&kt>=CU)msg+= '\n🎉 ¡Superaste los 25 kg! $2.000/kg activo.';
     alert(msg);limpiar();
   }catch(e){alert('Error guardando en Supabase.');}
 }
 
-function genDocLR(p){
-  const tkg=p.items.reduce((s,i)=>s+i.totalKg,0),env=lrTarifa(tkg);
+function genDocFijo(p){
+  const pv=getProv(p.prov);
+  const tkg=p.items.reduce((s,i)=>s+i.totalKg,0),env=tarifaDesp(pv,tkg);
   const fd=p.fecha?new Date(p.fecha+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'}):'';
-  let t=`ORDEN DE COMPRA — La Ruta del Café\nCliente: Ricardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\nCondición: precio Caja 10 Und · pago contra entrega\nDespacho: Padre Hurtado → Providencia\n${'─'.repeat(56)}\nFecha:  ${fd}\nCódigo: ${p.codigo||'—'}\nTueste: Medio · Formato: 1 kg\n${'─'.repeat(56)}\nDETALLE\n\n`;
+  let t=`ORDEN DE COMPRA — ${pv.nombre}\nCliente: Ricardo Melo · (+56 9) 94965285 · ricardo@brazoarmado.cl\n${pv.ocEnc?pv.ocEnc+'\n':''}${'─'.repeat(56)}\nFecha:  ${fd}\nCódigo: ${p.codigo||'—'}\nFormato: ${pv.formato}\n${'─'.repeat(56)}\nDETALLE\n\n`;
   const ag={};
   p.items.forEach(it=>{const k=it.origen+'|'+it.formato;ag[k]=ag[k]||{origen:it.origen,formato:it.formato,kg:0};ag[k].kg+=it.totalKg;});
   t+=`Origen                        Molienda      Kg   Neto/kg     Total neto\n${'─'.repeat(70)}\n`;
@@ -710,12 +743,12 @@ function genDocLR(p){
   Object.values(ag).forEach(a=>{const c=getCat(a.origen)||{kp:0};const n=Math.round(c.kp/IVA),tot=n*a.kg;neto+=tot;
     t+=`${a.origen.padEnd(29)} ${a.formato.padEnd(13)} ${String(a.kg).padEnd(4)} $${n.toLocaleString('es-CL').padEnd(10)} $${tot.toLocaleString('es-CL')}\n`;});
   const iva=Math.round(neto*(IVA-1));
-  t+=`${'─'.repeat(70)}\nTotal kg:      ${tkg.toFixed(2)} kg\nSubtotal neto: $${neto.toLocaleString('es-CL')}\nIVA 19%:       $${iva.toLocaleString('es-CL')}\nDespacho:      $${env.toLocaleString('es-CL')} (IVA incl.)\nTOTAL A PAGAR CONTRA ENTREGA: $${(neto+iva+env).toLocaleString('es-CL')}\n`;
+  t+=`${'─'.repeat(70)}\nTotal kg:      ${tkg.toFixed(2)} kg\nSubtotal neto: $${neto.toLocaleString('es-CL')}\nIVA 19%:       $${iva.toLocaleString('es-CL')}\nDespacho:      ${pv.tramos.length?'$'+env.toLocaleString('es-CL')+' (IVA incl.)':'por confirmar'}\nTOTAL A PAGAR: $${(neto+iva+env).toLocaleString('es-CL')}${pv.tramos.length?'':' + despacho'}\n`;
   t+=`${'─'.repeat(56)}\nGenerado por Conpro Café · Gestor de Pedidos\n`;
   return t;
 }
 function genDoc(p){
-  if((p.prov||1)===LR)return genDocLR(p);
+  if(esFijo(p.prov||1))return genDocFijo(p);
   const sub=p.items.reduce((s,i)=>s+i.totalP,0),del=p.canal==='cafeteria'?3500:0;
   const tkg=p.items.reduce((s,i)=>s+i.totalKg,0);
   const temp=p.items.filter(i=>i.unidad==='2x500').reduce((s,i)=>s+(i.emp||0)*i.cantidad,0);
@@ -1023,22 +1056,26 @@ function renderCat(){
   const on=cat.filter(c=>c.on).length;
   document.getElementById('cnt-on').textContent=on+' activos';
   document.getElementById('cnt-off').textContent=(cat.length-on)+' sin stock';
-  const hayLR=cat.some(c=>c.prov===LR);
-  document.getElementById('cat-grid').innerHTML=cat.map((c,i)=>{
-    if(c.prov===LR){
-      return`<div class="cc ${c.on?'':'off'}" style="order:2;">
+  const cardFijo=(c,i)=>{
+      const pv=getProv(c.prov);
+      return`<div class="cc ${c.on?'':'off'}">
       <div class="cc-tog"><button class="togbtn" onclick="togCat(${i})">${c.on?'⏸ Pausar':'▶ Activar'}</button></div>
       <div class="cc-name">${c.n}${c.nuevo?'<span class="nbadge">NUEVO</span>':''}</div>
-      <div class="cc-var">${CATEG[c.n]||''} · ${c.p} · ${c.v}</div>
+      <div class="cc-var">${[c.cat,c.p,c.v].filter(Boolean).join(' · ')}</div>
       ${c.perf?`<div class="cc-perf">${c.perf}</div>`:''}
       <div class="cc-prices">
         <div class="cp-b"><div class="cp-lbl">Base</div><div class="cp-may">$${c.km.toLocaleString('es-CL')}/kg</div></div>
-        <div class="cp-b"><div class="cp-lbl">Meta ${LR_UMBRAL} kg+</div><div class="cp-may">$${(c.km-LR_DESC).toLocaleString('es-CL')}/kg</div></div>
+        ${tieneDesc(pv)?`<div class="cp-b"><div class="cp-lbl">Meta ${pv.umbral} kg+</div><div class="cp-may">$${(c.km-pv.desc).toLocaleString('es-CL')}/kg</div></div>`:''}
         <div class="cp-b"><div class="cp-lbl">Costo</div><div class="cp-unit">$${c.kp.toLocaleString('es-CL')}/kg</div></div>
       </div>
       <span class="cstat ${c.on?'son':'soff'}">${c.on?'✓ Disponible':'Sin stock'}</span>
     </div>`;
-    }
+  };
+  const conIdx=cat.map((c,i)=>[c,i]);
+  const fijos=provs.filter(p=>p.tipo==='fijo'&&cat.some(c=>c.prov===p.id)).map(pv=>
+    `<div class="section-title" style="grid-column:1/-1;margin:10px 0 0;">${pv.nombre} · ${pv.formato}${pv.activo?'':' · <span style="color:#92400e;">proveedor inactivo</span>'}</div>`+
+    conIdx.filter(([c])=>c.prov===pv.id).map(([c,i])=>cardFijo(c,i)).join('')).join('');
+  document.getElementById('cat-grid').innerHTML=conIdx.filter(([c])=>!esFijo(c.prov)).map(([c,i])=>{
     if(c.bkg){
       const d=c.ku?desc(c.ku,c.km):null;
       return`<div class="cc ${c.on?'':'off'}">
@@ -1066,7 +1103,7 @@ function renderCat(){
       </div>
       <span class="cstat ${c.on?'son':'soff'}">${c.on?'✓ Disponible':'Sin stock'}</span>
     </div>`;
-  }).join('')+(hayLR?'<div class="section-title" style="grid-column:1/-1;order:1;margin:10px 0 0;">La Ruta del Café · tueste medio · 1 kg</div>':'');
+  }).join('')+fijos;
 }
 async function togCat(i){
   cat[i].on=!cat[i].on;renderCat();fillOrigen();
@@ -1224,17 +1261,17 @@ function renderMes(){
   let al='';
   if(!mp.length)al='<div class="alert al-info"><div class="al-ic">→</div><div>Sin pedidos este mes aún. Agrega el primero.</div></div>';
   else{if(!sup)al+=`<div class="alert al-warn"><div class="al-ic">◆</div><div>Faltan <strong>${(CU-tkg).toFixed(2)} kg</strong> para activar $2.000/kg.</div></div>`;if(sup)al+=`<div class="alert al-good"><div class="al-ic">↑</div><div><strong>Comisión alta activa.</strong> $2.000/kg desde el kg 26.</div></div>`;if(ckv===0)al+=`<div class="alert al-info"><div class="al-ic">→</div><div>Sin pedido de cafetería B2B este mes.</div></div>`;}
-  const lrp=mpAll.filter(p=>p.prov===LR);
-  if(lrp.length){
-    const kgLR=lrp.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0),mLR=lrp.reduce((s,p)=>s+margenLR(p.items).margen,0),falta=Math.max(0,LR_META_MES-kgLR);
-    al+=`<div class="alert ${falta?'al-warn':'al-good'}"><div class="al-ic">☕</div><div><strong>La Ruta del Café:</strong> ${kgLR.toFixed(2)} de ${LR_META_MES} kg en el mes · ${lrp.length} pedido(s) · margen neto $${mLR.toLocaleString('es-CL')}${falta?`<br>Faltan <strong>${falta.toFixed(2)} kg</strong>. Si no se venden, cómpralos en el último pedido del mes.`:'<br>Meta mensual cumplida.'}</div></div>`;
-  }
+  provs.filter(pv=>pv.tipo==='fijo').forEach(pv=>{
+    const lrp=mpAll.filter(p=>p.prov===pv.id);if(!lrp.length&&!(pv.activo&&pv.meta))return;
+    const kgLR=lrp.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0),mLR=lrp.reduce((s,p)=>s+margenFijo(p.items,pv).margen,0),falta=pv.meta?Math.max(0,pv.meta-kgLR):0;
+    al+=`<div class="alert ${falta?'al-warn':'al-good'}"><div class="al-ic">☕</div><div><strong>${pv.nombre}:</strong> ${kgLR.toFixed(2)}${pv.meta?` de ${pv.meta}`:''} kg en el mes · ${lrp.length} pedido(s) · margen neto $${mLR.toLocaleString('es-CL')}${pv.meta?(falta?`<br>Faltan <strong>${falta.toFixed(2)} kg</strong>. Si no se venden, cómpralos en el último pedido del mes.`:'<br>Meta mensual cumplida.'):''}</div></div>`;
+  });
   document.getElementById('al-mes').innerHTML=al;
   const po={};mpAll.forEach(p=>p.items.forEach(i=>{po[i.origen]=(po[i.origen]||0)+i.totalKg;}));
   const mx=Math.max(...Object.values(po),1);
   document.getElementById('bars-mes').innerHTML=Object.keys(po).length?'<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Por origen</div>'+Object.entries(po).sort((a,b)=>b[1]-a[1]).map(([o,k])=>`<div><div class="ob-lbl"><span>${o}</span><span>${k.toFixed(2)} kg</span></div><div class="ob-track"><div class="ob-fill" style="width:${Math.round(k/mx*100)}%;background:${COLORS[o]||'#888'};"></div></div></div>`).join(''):'';
   const ESTADOS={pendiente:'🟡 Pendiente',entregado:'🚚 Entregado',pagado:'✅ Pagado',finalizado:'⬛ Finalizado'};
-  document.getElementById('ped-mes').innerHTML=mpAll.length?mpAll.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp3=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);const est=p.estado||'pendiente';return`<div class="card"><div class="card-hd"><div><div class="card-title">${p.prov===LR?'La Ruta · ':''}${p.canal==='comunidad'?'Pedido WhatsApp':'Cafetería B2B'}</div><div class="card-meta">${p.fecha} · ${kp.toFixed(2)} kg · $${mp3.toLocaleString('es-CL')} · Com. $${(p.comision||0).toLocaleString('es-CL')}</div></div><span class="badge ${p.canal==='comunidad'?'bd-blue':'bd-red'}">${p.canal==='comunidad'?'Comunidad':'B2B'}</span></div>${p.items.map(i=>`<div style="font-size:11px;color:#6b7280;padding:2px 0;">${i.origen} · ${i.formato} · ${i.cantidad}× ${i.label} · ${i.totalKg.toFixed(2)} kg · $${i.totalP.toLocaleString('es-CL')}</div>`).join('')}<div style="margin-top:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;"><select onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 8px;width:auto;">${Object.entries(ESTADOS).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select><button class="btn btn-sm" onclick="verOC('${p.id}')">Ver OC</button></div></div>`;}).join(''):'';
+  document.getElementById('ped-mes').innerHTML=mpAll.length?mpAll.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp3=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);const est=p.estado||'pendiente';return`<div class="card"><div class="card-hd"><div><div class="card-title">${esFijo(p.prov)?getProv(p.prov).nombre+' · ':''}${p.canal==='comunidad'?'Pedido WhatsApp':'Cafetería B2B'}</div><div class="card-meta">${p.fecha} · ${kp.toFixed(2)} kg · $${mp3.toLocaleString('es-CL')} · Com. $${(p.comision||0).toLocaleString('es-CL')}</div></div><span class="badge ${p.canal==='comunidad'?'bd-blue':'bd-red'}">${p.canal==='comunidad'?'Comunidad':'B2B'}</span></div>${p.items.map(i=>`<div style="font-size:11px;color:#6b7280;padding:2px 0;">${i.origen} · ${i.formato} · ${i.cantidad}× ${i.label} · ${i.totalKg.toFixed(2)} kg · $${i.totalP.toLocaleString('es-CL')}</div>`).join('')}<div style="margin-top:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;"><select onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 8px;width:auto;">${Object.entries(ESTADOS).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select><button class="btn btn-sm" onclick="verOC('${p.id}')">Ver OC</button></div></div>`;}).join(''):'';
 }
 
 function genReporteTexto(){
@@ -1361,7 +1398,7 @@ document.getElementById('fecha').value=hoy();
 (async function init(){
   document.body.style.opacity='.5';
   await load();
-  fillOrigen();fillClienteList();genCodigo();onCanalChange();
+  fillProveedores();fillOrigen();fillClienteList();genCodigo();onCanalChange();
   document.body.style.opacity='1';
 })();
 </script>
