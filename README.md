@@ -1,2 +1,2 @@
-# CRL-gestor
-Gestión de pedidos de café CRL
+# gestor_conpro
+Gestión de pedidos y generador de OC
