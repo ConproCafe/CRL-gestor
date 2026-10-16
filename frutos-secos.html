@@ -661,7 +661,7 @@ function renderMes(){
   const mx=Math.max(...Object.values(po),1);
   document.getElementById('bars-mes').innerHTML=Object.keys(po).length?'<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Por producto</div>'+Object.entries(po).sort((a,b)=>b[1]-a[1]).map(([o,k])=>`<div style="margin-bottom:5px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;"><span>${dispName(o)}</span><span>${k.toFixed(0)} kg</span></div><div style="height:7px;background:#e5e7eb;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.round(k/mx*100)}%;background:#8b5a2b;"></div></div></div>`).join(''):'';
   const ESTADOS={pendiente:'🟡 Pendiente',entregado:'🚚 Entregado',pagado:'✅ Pagado',finalizado:'⬛ Finalizado'};
-  document.getElementById('ped-mes').innerHTML=mpAll.length?mpAll.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0);const est=p.estado||'pendiente';return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:13px;font-weight:500;">${p.codigo||'—'}</div><div style="font-size:11px;color:#6b7280;">${p.fecha} · ${kp.toFixed(0)} kg · ${clp(mp)}</div></div></div>${p.items.map(i=>`<div style="font-size:11px;color:#6b7280;padding:2px 0;">${dispName(i.origen)} · ${i.cantidad} kg · ${clp(i.totalP)}${i.clienteNombre?' · 👤 '+i.clienteNombre:''}</div>`).join('')}<div style="margin-top:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;"><select onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 8px;width:auto;">${Object.entries(ESTADOS).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select><button class="btn btn-sm" onclick="verOC('${p.id}')">Ver documentos</button></div></div>`;}).join(''):'';
+  document.getElementById('ped-mes').innerHTML=mpAll.length?mpAll.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0);const costoP=p.items.reduce((s,i)=>{const c=getCat(i.origen);return s+(c?c.kp*i.totalKg:0);},0),margenP=mp-costoP;const est=p.estado||'pendiente';return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:13px;font-weight:500;">${p.codigo||'—'}</div><div style="font-size:11px;color:#6b7280;">${p.fecha} · ${kp.toFixed(0)} kg · venta ${clp(mp)} · margen <span style="color:${margenP>=0?'#15803d':'#dc2626'};font-weight:600;">${clp(margenP)}</span></div></div></div>${p.items.map(i=>`<div style="font-size:11px;color:#6b7280;padding:2px 0;">${dispName(i.origen)} · ${i.cantidad} kg · ${clp(i.totalP)}${i.clienteNombre?' · 👤 '+i.clienteNombre:''}</div>`).join('')}<div style="margin-top:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;"><select onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 8px;width:auto;">${Object.entries(ESTADOS).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select><button class="btn btn-sm" onclick="verOC('${p.id}')">Ver documentos</button></div></div>`;}).join(''):'';
 }
 async function cambiarEstado(id,val){
   const p=pedidos.find(x=>x.id==id);if(!p)return;const prev=p.estado;p.estado=val;
@@ -687,12 +687,14 @@ function renderHist(){
   const el=document.getElementById('hist-content');
   if(!pedidos.length){el.innerHTML='<div class="empty">Sin pedidos registrados.</div>';return;}
   const ESTL={pendiente:'🟡',entregado:'🚚',pagado:'✅',finalizado:'⬛'};
+  const costoPedido=p=>p.items.reduce((s,i)=>{const c=getCat(i.origen);return s+(c?c.kp*i.totalKg:0);},0);
   el.innerHTML=Object.entries(pm).sort((a,b)=>b[0].localeCompare(a[0])).map(([mes,ps])=>{
     const kg=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0),m=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0),0);
+    const costoMes=ps.reduce((s,p)=>s+costoPedido(p),0),margenMes=m-costoMes;
     const filas=ps.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
-      const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0);
+      const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0),costo=costoPedido(p),margen=mp-costo;
       return`<div class="hi" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">${ESTL[p.estado]||'🟡'} ${p.fecha} · ${p.codigo||'—'} · ${kp.toFixed(0)}kg · ${clp(mp)}</div>
+        <div style="flex:1;min-width:160px;">${ESTL[p.estado]||'🟡'} ${p.fecha} · ${p.codigo||'—'} · ${kp.toFixed(0)}kg · venta ${clp(mp)} · costo ${clp(costo)} · <span style="color:${margen>=0?'#15803d':'#dc2626'};font-weight:600;">margen ${clp(margen)}</span></div>
         <div style="display:flex;gap:5px;flex-shrink:0;">
           <button class="btn btn-sm" onclick="verOC('${p.id}')">Ver documentos</button>
           <button class="btn btn-sm btn-danger" onclick="delPedido('${p.id}')">Eliminar</button>
@@ -700,7 +702,7 @@ function renderHist(){
     }).join('');
     return`<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleMes('${mes}')">
-        <div><div style="font-size:13px;font-weight:500;">${mes}</div><div style="font-size:11px;color:#6b7280;">${ps.length} pedidos · ${kg.toFixed(0)} kg · ${clp(m)}</div></div>
+        <div><div style="font-size:13px;font-weight:500;">${mes}</div><div style="font-size:11px;color:#6b7280;">${ps.length} pedidos · ${kg.toFixed(0)} kg · venta ${clp(m)} · margen ${clp(margenMes)}</div></div>
         <span id="mes-arrow-${mes}" style="font-size:11px;color:#9ca3af;">▾ ver</span>
       </div>
       <div id="mes-detalle-${mes}" style="display:none;margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">${filas}</div>
