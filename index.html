@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-28</div>
+  <div style="font-size:9px;opacity:.4;">V1-29</div>
 </div>
 
 <div class="container">
@@ -851,48 +851,72 @@ function parseWhatsApp(txt){
     const bl=b.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
     if(bl.length<3)return;
     const nombre=bl[0].replace(/^[•\-\*]\s*/,'').trim();
-    const prodLine=bl[1];
-    const precioLine=bl.find(l=>/\$/.test(l))||'';
-    const precio=parseInt((precioLine.match(/\$\s*([\d.]+)/)||[])[1]?.replace(/\./g,'')||'0',10);
-    let origenParte=prodLine,moliendaTxt='';
-    const dashIdx=prodLine.lastIndexOf(' - ');
-    if(dashIdx>-1){origenParte=prodLine.slice(0,dashIdx);moliendaTxt=prodLine.slice(dashIdx+3);}
-    let origenTxt=origenParte.trim(),cantidad=1,unidad='kg';
-    // Caso especial: "x 250 Gr" o "x 250gr" sin número de cantidad previo → 1 paquete 250g
-    const x250Match=origenParte.match(/^(.*?)\s+x\s+250\s*gr?s?\b/i);
-    const xMatch=x250Match?null:origenParte.match(/^(.*?)\s+x\s+(\d+)\s*(2\s*[x×]\s*500\s*gr?|kgs?|k\b|grs?|g\b)/i);
-    if(x250Match){
-      origenTxt=x250Match[1].trim();unidad='250g';cantidad=1;
-    } else if(xMatch){
-      origenTxt=xMatch[1].trim();
-      const u=xMatch[3].toLowerCase();
-      if(/2\s*[x×]\s*500/.test(u)){unidad='2x500';cantidad=parseInt(xMatch[2],10);}
-      else if(/kg|k\b/.test(u)){unidad='kg';cantidad=parseInt(xMatch[2],10);}
-      else{unidad='250g';cantidad=parseInt(xMatch[2],10);}
+    if(!nombre)return;
+    // Un cliente puede pedir varios orígenes distintos: recorremos todas las líneas
+    // del bloque (no solo la segunda) y vamos emparejando cada línea de producto
+    // con la línea de precio que le sigue. La línea "Total: $..." se ignora.
+    const pares=[];let pendiente=null;
+    for(let i=1;i<bl.length;i++){
+      const line=bl[i];
+      if(/^total\s*:/i.test(line))continue;
+      const mPrecio=line.match(/\$\s*([\d.]+)/);
+      const textoSinPrecio=mPrecio?line.replace(mPrecio[0],'').trim():line;
+      const tieneLetras=/[a-zA-ZÀ-ÿ]/.test(textoSinPrecio);
+      if(mPrecio&&!tieneLetras){
+        if(pendiente){pares.push({prodLine:pendiente,precio:parseInt(mPrecio[1].replace(/\./g,''),10)});pendiente=null;}
+        continue;
+      }
+      if(mPrecio&&tieneLetras){
+        pares.push({prodLine:textoSinPrecio,precio:parseInt(mPrecio[1].replace(/\./g,''),10)});
+        pendiente=null;continue;
+      }
+      if(tieneLetras)pendiente=line;
     }
-    if(unidad==='250g'&&/premium/i.test(prodLine))unidad='250gp';
-    if(!nombre||!origenTxt)return;
-    out.push({nombre,origenTxt,moliendaTxt:moliendaTxt.trim(),cantidad,unidad,precio});
+    pares.forEach(({prodLine,precio})=>{
+      let origenParte=prodLine,moliendaTxt='';
+      const dashIdx=prodLine.lastIndexOf(' - ');
+      if(dashIdx>-1){origenParte=prodLine.slice(0,dashIdx);moliendaTxt=prodLine.slice(dashIdx+3);}
+      let origenTxt=origenParte.trim(),cantidad=1,unidad='kg';
+      // Caso especial: "x 250 Gr" o "x 250gr" sin número de cantidad previo → 1 paquete 250g
+      const x250Match=origenParte.match(/^(.*?)\s+x\s+250\s*gr?s?\b/i);
+      const xMatch=x250Match?null:origenParte.match(/^(.*?)\s+x\s+(\d+)\s*(2\s*[x×]\s*500\s*gr?|kgs?|k\b|grs?|g\b)/i);
+      if(x250Match){
+        origenTxt=x250Match[1].trim();unidad='250g';cantidad=1;
+      } else if(xMatch){
+        origenTxt=xMatch[1].trim();
+        const u=xMatch[3].toLowerCase();
+        if(/2\s*[x×]\s*500/.test(u)){unidad='2x500';cantidad=parseInt(xMatch[2],10);}
+        else if(/kg|k\b/.test(u)){unidad='kg';cantidad=parseInt(xMatch[2],10);}
+        else{unidad='250g';cantidad=parseInt(xMatch[2],10);}
+      }
+      if(unidad==='250g'&&/premium/i.test(prodLine))unidad='250gp';
+      if(!origenTxt)return;
+      out.push({nombre,origenTxt,moliendaTxt:moliendaTxt.trim(),cantidad,unidad,precio});
+    });
   });
   return{fechaPedido,items:out};
 }
 
 function matchOrigen(origenTxt,precio,unidad){
+  // Los formatos "balde" (venta a granel, no por kg/250g) no participan del
+  // reconocimiento de texto de WhatsApp: comparten palabras con su origen normal
+  // (ej. "Etiopía"/"Heirloom Wild") y pueden ganarle el empate sin ser nunca
+  // lo que un cliente escribe en un pedido de WhatsApp.
+  const candidatos=catCRL().filter(c=>!c.bkg);
   const words=tokens(origenTxt);
   let best=null,bestScore=0;
-  catCRL().forEach(c=>{
-    const cWords=tokens(c.n+' '+(c.v||''));
+  candidatos.forEach(c=>{
+    const cWords=tokens(c.n+' '+(c.v||'')+' '+(c.p||''));
     const score=words.filter(w=>cWords.includes(w)).length;
     if(score>bestScore){bestScore=score;best=c;}
   });
-  const priceMatches=catCRL().filter(c=>{
-    if(c.bkg)return c.km===precio;
+  const priceMatches=candidatos.filter(c=>{
     const p=unidad==='kg'?c.km:unidad==='2x500'?c.km+EMP:unidad==='250gp'?c.gm+EMPP:c.gm;
     return p===precio;
   });
   if(priceMatches.length===1)return{match:priceMatches[0],confidence:(best===priceMatches[0]||bestScore>0)?'alta':'media'};
   if(best)return{match:best,confidence:priceMatches.includes(best)?'alta':'media'};
-  return{match:catCRL().find(c=>c.on)||catCRL()[0]||null,confidence:'baja'};
+  return{match:candidatos.find(c=>c.on)||candidatos[0]||null,confidence:'baja'};
 }
 
 function matchFormato(txt){
