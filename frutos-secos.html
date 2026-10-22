@@ -101,7 +101,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Conpro · Canal Comunidad WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.6;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.45;">V1</div>
+  <div style="font-size:9px;opacity:.45;">V1-4</div>
 </div>
 
 <div class="container">
@@ -115,6 +115,19 @@ textarea{resize:vertical;min-height:52px;}
 
 <!-- NUEVO PEDIDO -->
 <div id="panel-nuevo" class="panel active">
+<div class="card">
+  <div class="section-title">📋 Importar pedido desde WhatsApp</div>
+  <div class="field" style="margin-bottom:10px;">
+    <textarea id="wsp-text-fs" rows="8" placeholder="Pega aquí el texto del pedido de Frutos Secos tal como te llega (con los distintos clientes, productos y precio)..."></textarea>
+  </div>
+  <button class="btn btn-primary" onclick="analizarWspFS()">Analizar texto</button>
+  <div id="wsp-preview-fs" style="margin-top:12px;"></div>
+  <div id="wsp-guardar-wrap-fs" style="display:none;gap:7px;flex-wrap:wrap;margin-top:10px;">
+    <button class="btn btn-primary" onclick="agregarImportadosFS()">+ Agregar estos ítems al pedido</button>
+    <button class="btn" onclick="cancelarImportFS()">Cancelar</button>
+  </div>
+  <div id="wsp-res-fs" style="margin-top:8px;"></div>
+</div>
 <div class="card">
   <div class="section-title">Datos del pedido</div>
   <div id="prov-sel-wrap" style="display:none;margin-bottom:8px;">
@@ -305,6 +318,180 @@ function hoy(){return new Date().toISOString().split('T')[0];}
 function normTxt(s){return(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
 function clp(n){return'$'+Math.round(n||0).toLocaleString('es-CL');}
 
+// ── IMPORTAR DESDE WHATSAPP ──────────────────────────────────────────────────
+// Normaliza plurales simples (pistacho/pistachos, almendra/almendras) para que el
+// cliente pueda escribir cualquiera de las dos formas y siga matcheando bien.
+function tokens(s){return normTxt(s).split(/[^a-z0-9]+/).filter(Boolean).map(w=>w.length>3&&w.endsWith('s')?w.slice(0,-1):w);}
+
+function parseWhatsAppFS(txt){
+  const fechaPedido=hoy(); // el texto de FS no trae una fecha confiable para extraer (solo día de cierre)
+  const blocks=txt.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  const clientBlocks=blocks.filter(b=>!/^Pedido\s/i.test(b)&&!/^Entrega\s/i.test(b)&&!/^Cierre\b/i.test(b));
+  const out=[];
+  clientBlocks.forEach(b=>{
+    const bl=b.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(bl.length<3)return;
+    const nombre=bl[0].replace(/^[\s•\-\*⁠​‌‍﻿]+/,'').trim();
+    if(!nombre)return;
+    // Un cliente puede pedir varios productos: recorremos todas las líneas del
+    // bloque emparejando cada línea de producto con la línea de precio que sigue.
+    // La línea "Total: $..." se ignora (venga con o sin "$").
+    const pares=[];let pendiente=null;
+    for(let i=1;i<bl.length;i++){
+      const line=bl[i];
+      if(/^total\s*:/i.test(line))continue;
+      const mPrecio=line.match(/\$\s*([\d.]+)/);
+      const textoSinPrecio=mPrecio?line.replace(mPrecio[0],'').trim():line;
+      const tieneLetras=/[a-zA-ZÀ-ÿ]/.test(textoSinPrecio);
+      if(mPrecio&&!tieneLetras){
+        if(pendiente){pares.push({prodLine:pendiente,precio:parseInt(mPrecio[1].replace(/\./g,''),10)});pendiente=null;}
+        continue;
+      }
+      if(mPrecio&&tieneLetras){
+        pares.push({prodLine:textoSinPrecio,precio:parseInt(mPrecio[1].replace(/\./g,''),10)});
+        pendiente=null;continue;
+      }
+      if(tieneLetras)pendiente=line;
+    }
+    pares.forEach(({prodLine,precio})=>{
+      let origenTxt=prodLine.trim(),cantidad=1;
+      const xMatch=prodLine.match(/^(.*?)\s+x\s+(\d+)\s*kgs?\b/i);
+      if(xMatch){origenTxt=xMatch[1].trim();cantidad=parseInt(xMatch[2],10);}
+      if(!origenTxt)return;
+      out.push({nombre,origenTxt,cantidad,precio});
+    });
+  });
+  return{fechaPedido,items:out};
+}
+
+function matchOrigenFS(origenTxt,precio){
+  const words=tokens(origenTxt);
+  let best=null,bestScore=0;
+  cat.forEach(c=>{
+    const cWords=[...new Set(tokens(dispName(c.n)+' '+(c.categoria||'')))];
+    const overlap=words.filter(w=>cWords.includes(w)).length;
+    if(!overlap)return;
+    // En empate de palabras coincidentes gana el nombre más corto/específico
+    // (ej. "Pistachos Sin Sal" vs "Pistachos Sin Cáscara Sin Tostar Sin Sal Nacional"
+    // para el texto "Pistacho sin sal"), no el primero que aparezca en la lista.
+    const score=overlap-cWords.length*0.01;
+    if(score>bestScore){bestScore=score;best=c;}
+  });
+  const priceMatches=cat.filter(c=>c.km===precio);
+  if(priceMatches.length===1)return{match:priceMatches[0],confidence:(best===priceMatches[0]||bestScore>0)?'alta':'media'};
+  if(best)return{match:best,confidence:priceMatches.includes(best)?'alta':'media'};
+  return{match:cat.find(c=>c.on)||cat[0]||null,confidence:'baja'};
+}
+
+let wspParsedFS=[];
+
+function analizarWspFS(){
+  const txt=document.getElementById('wsp-text-fs').value;
+  if(!txt.trim()){alert('Pega el texto del pedido primero.');return;}
+  const{items}=parseWhatsAppFS(txt);
+  if(!items.length){document.getElementById('wsp-preview-fs').innerHTML='<div class="alert al-warn"><div class="al-ic">◆</div><div>No se reconocieron productos en el texto. Revisa el formato (nombre, producto x cantidad Kg, precio).</div></div>';document.getElementById('wsp-guardar-wrap-fs').style.display='none';return;}
+  wspParsedFS=items.map(it=>{
+    const um=matchOrigenFS(it.origenTxt,it.precio);
+    return{...it,matchC:um.match,confidence:um.confidence};
+  });
+  renderWspPreviewFS();
+}
+
+function origenOptionsHtmlFS(sel){
+  return cat.map(c=>`<option value="${c.n}" ${c.n===sel?'selected':''}>${dispName(c.n)}${c.on?'':' (sin stock)'}</option>`).join('');
+}
+
+function renderWspPreviewFS(){
+  const el=document.getElementById('wsp-preview-fs');
+  el.innerHTML=wspParsedFS.map((it,i)=>{
+    const warn=it.confidence!=='alta'?`<div class="ph" style="color:#b45309;">⚠ verifica el producto — precio detectado en el texto: $${it.precio.toLocaleString('es-CL')}</div>`:'';
+    const _n=normTxt((it.nombre||'').trim());
+    const esNuevo=!clientes.find(cl=>{const _c=normTxt(cl.nombre);return _c===_n||_c.includes(_n)||_n.includes(_c);});
+    return`<div class="item-row impfs-row" data-i="${i}" style="flex-direction:column;align-items:stretch;">
+      <div class="field-row">
+        <div class="field">
+          <div class="lbl" style="display:flex;justify-content:space-between;align-items:center;">
+            Cliente
+            ${esNuevo&&it.nombre?`<span id="new-clifs-badge-${i}" style="font-size:10px;color:#b45309;font-weight:600;">⚠ nuevo</span>`:''}
+          </div>
+          <input type="text" id="impfs-cliente-${i}" value="${(it.nombre||'').replace(/"/g,'')}" oninput="checkNuevoClienteFS(${i},this.value)"/>
+          <div id="new-clifs-form-${i}" style="display:${esNuevo&&it.nombre?'flex':'none'};gap:6px;align-items:center;margin-top:5px;flex-wrap:wrap;">
+            <input type="tel" id="new-clifs-tel-${i}" placeholder="Teléfono (+569...)" style="flex:1;min-width:140px;font-size:12px;padding:4px 7px;border:1px solid #d1d5db;border-radius:5px;"/>
+            <button class="btn btn-sm btn-primary" style="font-size:11px;" onclick="quickSaveClienteFS(${i})">💾 Guardar cliente</button>
+            <span id="new-clifs-res-${i}" style="font-size:11px;"></span>
+          </div>
+        </div>
+        <div class="field"><div class="lbl">Producto</div><select id="impfs-origen-${i}">${origenOptionsHtmlFS(it.matchC?it.matchC.n:'')}</select></div>
+      </div>
+      <div class="field" style="max-width:120px;"><div class="lbl">Cant. (kg)</div><input type="number" id="impfs-cant-${i}" value="${it.cantidad}" min="1"/></div>
+      ${warn}
+      <button class="btn btn-sm btn-danger" style="align-self:flex-start;" onclick="this.closest('.impfs-row').remove()">Quitar</button>
+    </div>`;
+  }).join('');
+  document.getElementById('wsp-guardar-wrap-fs').style.display='flex';
+  document.getElementById('wsp-res-fs').innerHTML='';
+}
+
+function checkNuevoClienteFS(i,valor){
+  const _v=normTxt(valor);const existe=clientes.find(cl=>{const _c=normTxt(cl.nombre);return _c===_v||_c.includes(_v)||_v.includes(_c);});
+  const badge=document.getElementById(`new-clifs-badge-${i}`);
+  const form=document.getElementById(`new-clifs-form-${i}`);
+  const res=document.getElementById(`new-clifs-res-${i}`);
+  if(badge)badge.style.display=existe?'none':'inline';
+  if(form)form.style.display=(!existe&&valor.trim())?'flex':'none';
+  if(res)res.textContent='';
+}
+
+async function quickSaveClienteFS(i){
+  const nombre=document.getElementById(`impfs-cliente-${i}`).value.trim();
+  const tel=document.getElementById(`new-clifs-tel-${i}`).value.trim();
+  const res=document.getElementById(`new-clifs-res-${i}`);
+  if(!nombre){res.textContent='Falta el nombre.';return;}
+  const id='cl_'+Date.now();
+  try{
+    await sbInsert('clientes',{id,nombre,tel,dir:'',notas:'',creado_en:hoy()});
+    clientes.push({id,nombre,tel,dir:'',notas:'',creado:hoy()});
+    fillClienteList();
+    res.style.color='#15803d';res.textContent='✓ Guardado';
+    const badge=document.getElementById(`new-clifs-badge-${i}`),form=document.getElementById(`new-clifs-form-${i}`);
+    if(badge)badge.style.display='none';if(form)form.style.display='none';
+  }catch(e){res.style.color='#dc2626';res.textContent='Error al guardar.';console.error('quickSaveClienteFS',e);}
+}
+
+async function agregarImportadosFS(){
+  const rows=document.querySelectorAll('#wsp-preview-fs .impfs-row');
+  if(!rows.length){alert('No hay ítems para agregar.');return;}
+  for(const row of rows){
+    const i=row.dataset.i;
+    const nombre=document.getElementById(`impfs-cliente-${i}`).value.trim();
+    const origenN=document.getElementById(`impfs-origen-${i}`).value;
+    const cantidad=parseInt(document.getElementById(`impfs-cant-${i}`).value)||1;
+    if(!nombre||!origenN)continue;
+    const c=getCat(origenN);if(!c)continue;
+    let match=clientes.find(cl=>normTxt(cl.nombre)===normTxt(nombre)),clienteId=match?match.id:null;
+    if(!clienteId){
+      const newId='cl_'+Date.now()+'_'+i;
+      try{
+        await sbInsert('clientes',{id:newId,nombre,tel:'',dir:'',notas:'',creado_en:hoy()});
+        clientes.push({id:newId,nombre,tel:'',dir:'',notas:'',creado:hoy()});
+        clienteId=newId;
+      }catch(e){console.error('Error creando cliente',e);}
+    }
+    items.push({origen:c.n,cantidad,totalKg:cantidad,precioU:c.km,totalP:c.km*cantidad,clienteNombre:nombre,clienteId});
+  }
+  fillClienteList();renderItems();
+  document.getElementById('wsp-res-fs').innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div>Ítems agregados al pedido — revisa la lista abajo antes de guardar.</div></div>`;
+  document.getElementById('wsp-text-fs').value='';document.getElementById('wsp-preview-fs').innerHTML='';document.getElementById('wsp-guardar-wrap-fs').style.display='none';wspParsedFS=[];
+}
+
+function cancelarImportFS(){
+  document.getElementById('wsp-text-fs').value='';
+  document.getElementById('wsp-preview-fs').innerHTML='';
+  document.getElementById('wsp-guardar-wrap-fs').style.display='none';
+  document.getElementById('wsp-res-fs').innerHTML='';
+  wspParsedFS=[];
+}
+
 async function load(){
   try{
     const[provRows,catRows,catalogAll,clis]=await Promise.all([
@@ -429,9 +616,19 @@ async function addItem(){
   }
   items.push({origen:n,cantidad:q,totalKg:q,precioU:c.km,totalP:c.km*q,clienteNombre,clienteId});
   document.getElementById('origen').value='';document.getElementById('cantidad').value='1';
-  document.getElementById('item-cliente').value='';document.getElementById('item-cliente-id').value='';document.getElementById('item-cliente-match').innerHTML='';
+  // El cliente queda fijo para el siguiente ítem — no se vacía solo porque ya se
+  // agregó un producto. Se cambia escribiendo otro nombre, o con "cambiar cliente".
+  document.getElementById('item-cliente').value=clienteNombre;
+  document.getElementById('item-cliente-id').value=clienteId||'';
+  document.getElementById('item-cliente-match').innerHTML=`<span style="color:#15803d;">Agregando productos para <strong>${clienteNombre}</strong> · <a href="#" onclick="limpiarClienteItem();return false;" style="color:#2563eb;text-decoration:underline;">cambiar cliente</a></span>`;
   document.getElementById('ri').style.display='none';
   renderItems();
+}
+function limpiarClienteItem(){
+  document.getElementById('item-cliente').value='';
+  document.getElementById('item-cliente-id').value='';
+  document.getElementById('item-cliente-match').innerHTML='';
+  document.getElementById('item-cliente').focus();
 }
 
 function renderItems(){
