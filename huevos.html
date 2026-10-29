@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Huevos — Registro de Ventas y Margen</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,sans-serif;font-size:14px;background:#f9fafb;color:#111;min-height:100vh;}
+.header{background:#a16207;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+.header-title{font-size:15px;font-weight:600;letter-spacing:.02em;}
+.header-sub{font-size:11px;opacity:.65;margin-top:2px;}
+.container{max-width:720px;margin:0 auto;padding:16px;}
+.tabs{display:flex;border-bottom:1px solid #e5e7eb;margin-bottom:1.2rem;overflow-x:auto;background:#fff;border-radius:8px 8px 0 0;padding:0 8px;}
+.tab{padding:10px 14px;font-size:12px;font-weight:500;color:#6b7280;cursor:pointer;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
+.tab.active{color:#111;border-bottom-color:#a16207;}
+.panel{display:none;}.panel.active{display:block;}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;}
+.section-title{font-size:13px;font-weight:600;color:#111;margin-bottom:12px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.field{display:flex;flex-direction:column;gap:3px;}
+.lbl{font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;}
+input,select,textarea{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#a16207;box-shadow:0 0 0 2px rgba(161,98,7,.12);}
+textarea{resize:vertical;min-height:52px;}
+.btn{padding:8px 16px;font-size:12px;font-weight:500;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111;cursor:pointer;transition:all .15s;}
+.btn:hover{background:#f3f4f6;}
+.btn-primary{background:#a16207;color:#fff;border-color:#a16207;}
+.btn-primary:hover{background:#854d0e;}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.btn-danger{border-color:#fca5a5;color:#dc2626;}
+.btn-danger:hover{background:#fef2f2;}
+.btn-green{background:#15803d;color:#fff;border-color:#15803d;}
+.btn-green:hover{background:#166534;}
+.item-row{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#f9fafb;border-radius:6px;margin-bottom:5px;font-size:12px;flex-wrap:wrap;}
+.item-name{flex:1;font-weight:500;min-width:70px;}
+.idet{color:#6b7280;font-size:11px;}
+.sbox{background:#f9fafb;border-radius:8px;padding:12px 14px;margin-bottom:12px;}
+.srow{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #e5e7eb;}
+.srow:last-child{border-bottom:none;font-weight:600;font-size:13px;padding-top:7px;}
+.slb{color:#6b7280;}.svl{color:#111;}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;}
+.bd-green{background:#dcfce7;color:#15803d;}.bd-gray{background:#f3f4f6;color:#6b7280;}
+.alert{border-radius:6px;padding:9px 12px;font-size:12px;margin-bottom:8px;line-height:1.5;display:flex;gap:8px;align-items:flex-start;}
+.al-warn{background:#fef3c7;color:#78350f;border:1px solid #fbbf24;}
+.al-good{background:#f0fdf4;color:#14532d;border:1px solid #86efac;}
+.al-info{background:#eff6ff;color:#1e3a5f;border:1px solid #93c5fd;}
+.al-danger{background:#fef2f2;color:#7f1d1d;border:1px solid #fca5a5;}
+.al-ic{font-size:13px;flex-shrink:0;margin-top:1px;}
+.sep{height:1px;background:#e5e7eb;margin:12px 0;}
+.krow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.kpi{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;}
+.kpi-lb{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+.kpi-vl{font-size:17px;font-weight:600;color:#111;}
+.kpi-sb{font-size:10px;color:#9ca3af;margin-top:1px;}
+.ph{font-size:10px;color:#9ca3af;margin-top:2px;min-height:14px;}
+.qty-row{display:flex;align-items:center;gap:7px;}
+.qbtn{width:36px;height:36px;font-size:18px;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qbtn:hover{background:#e5e7eb;}
+.qi{text-align:center;font-size:15px;font-weight:500;width:65px;flex-shrink:0;}
+.cg{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px;}
+.cc{border:1px solid #e5e7eb;border-radius:8px;padding:11px 13px;position:relative;background:#fff;}
+.cc-name{font-size:12px;font-weight:600;margin-bottom:1px;}
+.cc-var{font-size:10px;color:#6b7280;margin-bottom:4px;line-height:1.3;}
+.clgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.clcard{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;cursor:pointer;transition:border-color .2s;}
+.clcard:hover{border-color:#6b7280;}
+.cl-name{font-size:13px;font-weight:500;}.cl-meta{font-size:11px;color:#6b7280;margin-top:1px;}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:flex;align-items:center;justify-content:center;padding:14px;}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;padding:18px;}
+.mhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.mtitle{font-size:15px;font-weight:500;}
+.mclose{background:transparent;border:none;font-size:19px;cursor:pointer;color:#6b7280;}
+.srow3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.st{background:#f9fafb;border-radius:6px;padding:9px 10px;text-align:center;}
+.stv{font-size:17px;font-weight:500;}.stl{font-size:10px;color:#6b7280;margin-top:1px;}
+.fc{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;margin:2px;background:#f3f4f6;color:#6b7280;}
+.hi{font-size:11px;color:#6b7280;padding:5px 0;border-bottom:1px solid #e5e7eb;}
+.hi:last-child{border-bottom:none;}
+.empty{text-align:center;padding:2rem;color:#9ca3af;font-size:13px;}
+@media(max-width:600px){.cg,.clgrid,.field-row{grid-template-columns:1fr;}.krow{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">🥚 Huevos — Registro de Ventas y Margen</div>
+    <div class="header-sub">Conpro · Costo variable por temporada</div>
+  </div>
+  <div style="font-size:11px;opacity:.6;" id="hoy-lbl"></div>
+  <div style="font-size:9px;opacity:.45;">V1-1</div>
+</div>
+
+<div class="container">
+<div class="tabs">
+  <button class="tab active" onclick="showTab('nuevo',this)">Nuevo pedido</button>
+  <button class="tab" onclick="showTab('mes',this)">Mes actual</button>
+  <button class="tab" onclick="showTab('catalogo',this)">Catálogo</button>
+  <button class="tab" onclick="showTab('clientes',this)">Clientes</button>
+  <button class="tab" onclick="showTab('historial',this)">Historial</button>
+</div>
+
+<!-- NUEVO PEDIDO -->
+<div id="panel-nuevo" class="panel active">
+<div class="alert al-info"><div class="al-ic">ℹ️</div><div>El costo de los huevos cambia según la temporada (ej. $7.000 ahora vs $8.000 en otoño/invierno) — edítalo en cada ítem, no uses siempre el valor sugerido del catálogo.</div></div>
+<div class="card">
+  <div class="section-title">Datos del pedido</div>
+  <div class="field" style="margin-bottom:8px;"><div class="lbl">Fecha</div><input type="date" id="fecha"/></div>
+  <div class="field" style="margin-bottom:12px;">
+    <div class="lbl">Código de ciclo</div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input type="text" id="cod-ciclo" style="flex:1;font-family:monospace;font-size:13px;" readonly/>
+      <button type="button" class="btn btn-sm" onclick="genCodigo()">↺</button>
+    </div>
+  </div>
+  <div class="field"><div class="lbl">Delivery cobrado al cliente ($)</div><input type="number" id="extra-delivery" value="0" min="0" oninput="renderItems()"/></div>
+  <div class="ph">El delivery se suma al margen porque se lo cobras al cliente.</div>
+  <datalist id="cliente-list"></datalist>
+</div>
+
+<div class="card">
+  <div class="section-title">Agregar ítem</div>
+  <div class="field" style="margin-bottom:8px;"><div class="lbl">Producto</div>
+    <select id="origen" onchange="onOrigenChange()"><option value="">Seleccionar...</option></select>
+  </div>
+  <div class="field" style="margin-bottom:12px;">
+    <div class="lbl">Cantidad (bandejas)</div>
+    <div class="qty-row">
+      <button class="qbtn" onclick="chgQ(-1)">−</button>
+      <input class="qi" type="number" id="cantidad" value="1" min="1" max="999" onchange="updRI()"/>
+      <button class="qbtn" onclick="chgQ(1)">+</button>
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field"><div class="lbl">Costo unitario ($/bandeja) — editable</div><input type="number" id="costo-u" min="0" onchange="updRI()"/></div>
+    <div class="field"><div class="lbl">Precio venta ($/bandeja) — editable</div><input type="number" id="precio-u" min="0" onchange="updRI()"/></div>
+  </div>
+  <div id="ri" class="alert al-info" style="display:none;margin-bottom:10px;">
+    <div class="al-ic">🥚</div><div id="ri-txt"></div>
+  </div>
+  <div style="margin-bottom:10px;">
+    <div class="field">
+      <div class="lbl">Cliente que pide este ítem</div>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="item-cliente" list="cliente-list" placeholder="Nombre del comprador" style="flex:1;" oninput="resolveItemCliente()"/>
+        <button type="button" class="btn btn-sm" onclick="toggleNuevoClienteItemForm()" style="flex-shrink:0;">+ Nuevo</button>
+      </div>
+      <input type="hidden" id="item-cliente-id"/>
+      <div class="ph" id="item-cliente-match"></div>
+    </div>
+    <div id="nuevo-cliente-item-form" style="display:none;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px;margin-top:6px;">
+      <div class="field-row">
+        <div class="field"><div class="lbl">Teléfono</div><input type="text" id="nic-tel" placeholder="+56 9..."/></div>
+        <div class="field"><div class="lbl">Dirección</div><input type="text" id="nic-dir" placeholder="Opcional"/></div>
+      </div>
+      <button type="button" class="btn btn-sm btn-primary" onclick="crearClienteItem()">Guardar</button>
+      <button type="button" class="btn btn-sm" onclick="toggleNuevoClienteItemForm()">Cancelar</button>
+      <div id="nic-res" style="margin-top:4px;font-size:11px;"></div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="addItem()">+ Agregar ítem al pedido</button>
+</div>
+
+<div id="items-wrap" style="display:none;">
+<div class="card">
+  <div class="section-title">Ítems del pedido</div>
+  <div id="items-list"></div>
+  <div id="res-content" class="sbox" style="margin-top:10px;"></div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="savePedido()">Guardar pedido</button>
+    <button class="btn" onclick="limpiar()">Limpiar</button>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- MES ACTUAL -->
+<div id="panel-mes" class="panel">
+<div class="card">
+  <div class="krow" id="kpi-mes"></div>
+  <div id="al-mes" style="margin-bottom:10px;"></div>
+</div>
+<div id="ped-mes"></div>
+</div>
+
+<!-- CATÁLOGO -->
+<div id="panel-catalogo" class="panel">
+<div class="card">
+  <div class="section-title">Catálogo Huevos</div>
+  <div class="alert al-info"><div class="al-ic">ℹ️</div><div>Estos valores son solo de referencia — se usan para pre-llenar el ítem, pero siempre puedes editar el costo y precio en cada pedido.</div></div>
+  <div id="cat-grid"></div>
+</div>
+</div>
+
+<!-- CLIENTES -->
+<div id="panel-clientes" class="panel">
+<div class="card">
+  <div class="krow" id="cl-kpi" style="grid-template-columns:repeat(3,1fr);margin-bottom:0;"></div>
+</div>
+<div class="sep"></div>
+<div id="cl-grid" class="clgrid"></div>
+<div class="sep"></div>
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div class="section-title" style="margin:0;">📇 Directorio de clientes</div>
+    <span style="font-size:11px;color:#6b7280;" id="dir-count"></span>
+  </div>
+  <div class="alert al-info" style="margin-bottom:12px;"><div class="al-ic">ℹ️</div><div>El directorio es compartido con las demás líneas de Conpro (café, frutos secos, frutillas) — un cliente que compra varias líneas aparece una sola vez.</div></div>
+  <div id="dir-list" style="margin-bottom:14px;"></div>
+  <div class="sep"></div>
+  <div style="font-size:12px;font-weight:600;margin-bottom:10px;">➕ Agregar cliente nuevo</div>
+  <div class="field-row">
+    <div class="field"><div class="lbl">Nombre</div><input type="text" id="dc-nombre" placeholder="Ej: Bárbara Yáñez"/></div>
+    <div class="field"><div class="lbl">Teléfono</div><input type="text" id="dc-tel" placeholder="+56 9 1234 5678"/></div>
+  </div>
+  <div class="field" style="margin-bottom:8px;"><div class="lbl">Dirección</div><input type="text" id="dc-dir" placeholder="Opcional"/></div>
+  <div class="field" style="margin-bottom:10px;"><div class="lbl">Notas</div><textarea id="dc-notas" placeholder="Opcional"></textarea></div>
+  <button class="btn btn-primary" onclick="addCliente()">Agregar cliente</button>
+  <div id="dc-res" style="margin-top:8px;"></div>
+</div>
+</div>
+
+<!-- HISTORIAL -->
+<div id="panel-historial" class="panel">
+  <div id="hist-content"></div>
+</div>
+
+<!-- MODAL -->
+<div id="ov" class="ov" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mhd">
+      <div class="mtitle" id="m-nombre"></div>
+      <button class="mclose" onclick="document.getElementById('ov').style.display='none'">×</button>
+    </div>
+    <div id="m-content"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
+const PROV_IDS=[6];
+const PREFIJO='HUE';
+const UNIDAD='bandeja'; // etiqueta de la unidad de venta (huevos: bandeja; frutillas: kg)
+
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SB_URL='https://tgrwscyskqucsxndvyoa.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncndzY3lza3F1Y3N4bmR2eW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MzMzMzMsImV4cCI6MjA5NTQwOTMzM30.YngfJtMSloUopjXFmQnKgLf--crfJ1uNFslxpsujbyk';
+async function sb(path,opts={}){
+  const r=await fetch(`${SB_URL}/rest/v1/${path}`,{...opts,headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});
+  if(!r.ok){console.error('SB error',path,await r.text());throw new Error('SB '+r.status);}
+  return r.status===204?null:r.json();
+}
+async function sbSelect(t,q=''){return sb(`${t}?select=*${q}`);}
+async function sbInsert(t,row){return sb(t,{method:'POST',body:JSON.stringify(row)});}
+async function sbUpdate(t,match,patch){return sb(`${t}?${match}`,{method:'PATCH',body:JSON.stringify(patch)});}
+async function sbDelete(t,match){return sb(`${t}?${match}`,{method:'DELETE'});}
+
+let cat=[],pedidos=[],clientes=[],items=[];
+const MES_ACTUAL=new Date().toISOString().slice(0,7);
+
+function normCat(row){return{n:row.n,km:row.km,kp:row.kp||0,categoria:row.categoria||'',prov:row.proveedor_id,on:row.on_stock};}
+function dispName(n){return(n||'').trim();}
+function getCat(n){return cat.find(c=>c.n===n);}
+function hoy(){return new Date().toISOString().split('T')[0];}
+function normTxt(s){return(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
+function clp(n){return'$'+Math.round(n||0).toLocaleString('es-CL');}
+
+// ── EXTRAS DEL PEDIDO (delivery) ─────────────────────────────────────────────
+// Suma al margen: es un cobro extra que se le pasa al cliente. Se captura al
+// guardar como ítem sintético (tipo:'extra') para que el historial recuerde el
+// valor real de esa semana. Los huevos no tienen envase retornable (a diferencia
+// de las frutillas), así que no hay campo de envase acá.
+function extrasActuales(){
+  const deliveryMonto=parseInt(document.getElementById('extra-delivery')?.value)||0;
+  const out=[];
+  if(deliveryMonto>0)out.push({tipo:'extra',origen:'Delivery cobrado',cantidad:1,costoU:0,precioU:deliveryMonto,totalCosto:0,totalP:deliveryMonto,clienteNombre:null,clienteId:null});
+  return out;
+}
+function limpiarExtrasInputs(){
+  if(document.getElementById('extra-delivery'))document.getElementById('extra-delivery').value='0';
+}
+
+async function load(){
+  try{
+    const[catRows,clis]=await Promise.all([
+      sbSelect('catalogo','&order=n.asc'),
+      sbSelect('clientes','&order=creado_en.asc')
+    ]);
+    cat=catRows.map(normCat).filter(c=>PROV_IDS.includes(c.prov));
+    const idList=PROV_IDS.join(',');
+    const peds=await sbSelect('pedidos',`&proveedor_id=in.(${idList})&order=created_at.asc`);
+    pedidos=peds.map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,cliente:p.cliente,items:p.items||[],estado:p.estado||'pendiente',codigo:p.codigo||'',prov:p.proveedor_id}));
+    clientes=clis.map(c=>({id:c.id,nombre:c.nombre,tel:c.tel||'',dir:c.dir||'',notas:c.notas||'',creado:c.creado_en||''}));
+  }catch(e){console.error('Error cargando Supabase',e);alert('No se pudo conectar a Supabase. Revisa tu conexión.');cat=[];pedidos=[];clientes=[];}
+}
+
+function fillOrigen(){
+  const sel=document.getElementById('origen'),val=sel.value;
+  sel.innerHTML='<option value="">Seleccionar...</option>';
+  cat.filter(c=>c.on).sort((a,b)=>a.n.localeCompare(b.n)).forEach(c=>{const o=document.createElement('option');o.value=c.n;o.textContent=dispName(c.n);sel.appendChild(o);});
+  if(val)sel.value=val;
+  onOrigenChange();
+}
+
+function genCodigo(){
+  const d=new Date(),dd=String(d.getDate()).padStart(2,'0'),mm=String(d.getMonth()+1).padStart(2,'0'),yy=String(d.getFullYear()).slice(-2);
+  const rnd=Math.random().toString(36).slice(2,5).toUpperCase();
+  const cod=`${PREFIJO}-${yy}${mm}${dd}-${rnd}`;
+  const el=document.getElementById('cod-ciclo');if(el)el.value=cod;return cod;
+}
+function fillClienteList(){
+  const dl=document.getElementById('cliente-list');if(!dl)return;
+  dl.innerHTML=clientes.map(c=>`<option value="${c.nombre.replace(/"/g,'')}">`).join('');
+}
+function resolveItemCliente(){
+  const v=document.getElementById('item-cliente').value.trim();
+  const m=document.getElementById('item-cliente-match'),idF=document.getElementById('item-cliente-id');
+  if(!v){m.innerHTML='';idF.value='';return;}
+  const match=clientes.find(c=>normTxt(c.nombre)===normTxt(v));
+  if(match){idF.value=match.id;m.innerHTML=`<span style="color:#15803d;">✓ ${match.nombre}${match.tel?' · '+match.tel:''}</span>`;}
+  else{idF.value='';m.innerHTML=`<span style="color:#f59e0b;">Nuevo — se registrará al guardar</span>`;}
+}
+function toggleNuevoClienteItemForm(){
+  const f=document.getElementById('nuevo-cliente-item-form');
+  f.style.display=f.style.display==='block'?'none':'block';
+  if(f.style.display==='block')document.getElementById('nic-tel').focus();
+}
+async function crearClienteItem(){
+  const nombre=document.getElementById('item-cliente').value.trim();
+  const tel=document.getElementById('nic-tel').value.trim();
+  const dir=document.getElementById('nic-dir').value.trim();
+  const res=document.getElementById('nic-res');
+  if(!nombre){res.innerHTML='<span style="color:#dc2626;">Escribe el nombre arriba primero.</span>';return;}
+  if(clientes.some(c=>normTxt(c.nombre)===normTxt(nombre))){res.innerHTML='<span style="color:#f59e0b;">Ya existe.</span>';return;}
+  const id='cl_'+Date.now();
+  try{
+    await sbInsert('clientes',{id,nombre,tel,dir,notas:'',creado_en:hoy()});
+    clientes.push({id,nombre,tel,dir,notas:'',creado:hoy()});
+    fillClienteList();
+    document.getElementById('item-cliente-id').value=id;
+    document.getElementById('item-cliente-match').innerHTML=`<span style="color:#15803d;">✓ ${nombre} creado</span>`;
+    document.getElementById('nic-tel').value='';document.getElementById('nic-dir').value='';
+    res.innerHTML=`<span style="color:#15803d;">✓ Guardado</span>`;
+    setTimeout(()=>{toggleNuevoClienteItemForm();res.innerHTML='';},1200);
+  }catch(e){res.innerHTML='<span style="color:#dc2626;">Error Supabase</span>';}
+}
+
+function showTab(t,el){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');document.getElementById('panel-'+t).classList.add('active');
+  if(t==='mes')renderMes();if(t==='historial')renderHist();
+  if(t==='clientes')renderClientes();if(t==='catalogo')renderCat();
+  if(t==='nuevo')fillOrigen();
+}
+
+function chgQ(d){const i=document.getElementById('cantidad');i.value=Math.max(1,Math.min(999,(parseInt(i.value)||1)+d));updRI();}
+function onOrigenChange(){
+  const n=document.getElementById('origen').value,c=getCat(n);
+  if(c){document.getElementById('costo-u').value=c.kp||'';document.getElementById('precio-u').value=c.km||'';}
+  updRI();
+}
+function updRI(){
+  const n=document.getElementById('origen').value,q=parseInt(document.getElementById('cantidad').value)||1;
+  const costoU=parseInt(document.getElementById('costo-u').value)||0,precioU=parseInt(document.getElementById('precio-u').value)||0;
+  const el=document.getElementById('ri'),tx=document.getElementById('ri-txt');
+  if(!n){el.style.display='none';return;}
+  const tp=precioU*q,tc=costoU*q,marg=tp-tc;
+  tx.innerHTML=`<strong>${q} ${UNIDAD}${q>1?'s':''} de ${dispName(n)}</strong> · venta ${clp(tp)} · costo ${clp(tc)} · margen <strong>${clp(marg)}</strong>`;
+  el.style.display='flex';
+}
+
+async function addItem(){
+  const n=document.getElementById('origen').value,q=parseInt(document.getElementById('cantidad').value)||1;
+  if(!n){alert('Selecciona un producto.');return;}
+  const costoU=parseInt(document.getElementById('costo-u').value)||0,precioU=parseInt(document.getElementById('precio-u').value)||0;
+  if(precioU<=0){alert('Indica el precio de venta.');return;}
+  let clienteNombre=document.getElementById('item-cliente').value.trim(),clienteId=null;
+  if(!clienteNombre){alert('Indica el cliente que pide este ítem.');return;}
+  clienteId=document.getElementById('item-cliente-id').value||null;
+  if(!clienteId){
+    const match=clientes.find(x=>normTxt(x.nombre)===normTxt(clienteNombre));
+    if(match){clienteId=match.id;}
+    else{
+      const newId='cl_'+Date.now();
+      try{
+        await sbInsert('clientes',{id:newId,nombre:clienteNombre,tel:'',dir:'',notas:'',creado_en:hoy()});
+        clientes.push({id:newId,nombre:clienteNombre,tel:'',dir:'',notas:'',creado:hoy()});
+        fillClienteList();clienteId=newId;
+      }catch(e){console.error('Error creando cliente',e);}
+    }
+  }
+  items.push({tipo:'producto',origen:n,cantidad:q,costoU,precioU,totalCosto:costoU*q,totalP:precioU*q,clienteNombre,clienteId});
+  document.getElementById('cantidad').value='1';
+  document.getElementById('item-cliente').value=clienteNombre;
+  document.getElementById('item-cliente-id').value=clienteId||'';
+  document.getElementById('item-cliente-match').innerHTML=`<span style="color:#15803d;">Agregando productos para <strong>${clienteNombre}</strong> · <a href="#" onclick="limpiarClienteItem();return false;" style="color:#2563eb;text-decoration:underline;">cambiar cliente</a></span>`;
+  document.getElementById('ri').style.display='none';
+  renderItems();
+}
+function limpiarClienteItem(){
+  document.getElementById('item-cliente').value='';
+  document.getElementById('item-cliente-id').value='';
+  document.getElementById('item-cliente-match').innerHTML='';
+  document.getElementById('item-cliente').focus();
+}
+
+function renderItems(){
+  const l=document.getElementById('items-list');
+  const extras=extrasActuales();
+  if(!items.length&&!extras.length){l.innerHTML='';document.getElementById('items-wrap').style.display='none';return;}
+  l.innerHTML=items.map((it,i)=>`<div class="item-row">
+    <div class="item-name">${dispName(it.origen)}${it.clienteNombre?`<div style="font-size:10px;color:#6b7280;font-weight:400;">👤 ${it.clienteNombre}</div>`:''}</div>
+    <div class="idet">${it.cantidad} ${UNIDAD}${it.cantidad>1?'s':''} × ${clp(it.precioU)}</div>
+    <div class="idet" style="font-weight:500;">${clp(it.totalP)}</div>
+    <button class="btn btn-sm btn-danger" onclick="rmItem(${i})">×</button>
+  </div>`).join('')+extras.map(it=>`<div class="item-row" style="opacity:.75;">
+    <div class="item-name">${it.origen}</div>
+    <div class="idet">extra</div>
+    <div class="idet" style="font-weight:500;">${clp(it.totalP)}</div>
+  </div>`).join('');
+  const todos=[...items,...extras];
+  const sub=todos.reduce((s,i)=>s+i.totalP,0),tunid=items.reduce((s,i)=>s+i.cantidad,0);
+  const costo=todos.reduce((s,i)=>s+i.totalCosto,0);
+  document.getElementById('items-wrap').style.display='block';
+  document.getElementById('res-content').innerHTML=`
+    <div class="srow"><span class="slb">Total ${UNIDAD}s</span><span class="svl">${tunid}</span></div>
+    <div class="srow"><span class="slb">Costo</span><span class="svl">${clp(costo)}</span></div>
+    <div class="srow"><span class="slb">Venta (incl. extras)</span><span class="svl">${clp(sub)}</span></div>
+    <div class="srow"><span class="slb">Margen</span><span class="svl">${clp(sub-costo)}</span></div>`;
+}
+function rmItem(i){items.splice(i,1);renderItems();}
+
+async function savePedido(){
+  const extras=extrasActuales();
+  if(!items.length&&!extras.length){alert('Agrega al menos un ítem o un extra.');return;}
+  const pv=PROV_IDS[0],fecha=document.getElementById('fecha').value||hoy(),mes=fecha.slice(0,7);
+  const codigo=document.getElementById('cod-ciclo').value||genCodigo();
+  const clientesCiclo=[...new Set(items.map(i=>i.clienteNombre).filter(Boolean))].join(', ');
+  const todos=[...items,...extras];
+  const margen=todos.reduce((s,i)=>s+(i.totalP-i.totalCosto),0);
+  const row={id:Date.now(),fecha,mes,canal:'comunidad',cliente:clientesCiclo||'Ciclo Huevos',contacto:'',items:todos,comision:margen,estado:'pendiente',cafe_nombre:'',cafe_contacto:'',cliente_id:null,codigo,proveedor_id:pv};
+  try{
+    await sbInsert('pedidos',row);
+    pedidos.push({id:row.id,fecha,mes,cliente:row.cliente,items:todos,estado:'pendiente',codigo,prov:pv});
+    alert(`✅ Pedido guardado.\nCódigo: ${codigo}\nMargen: ${clp(margen)}`);
+    limpiar();
+  }catch(e){console.error(e);alert('Error guardando en Supabase.');}
+}
+
+// ── CATÁLOGO (valores sugeridos, editables) ──────────────────────────────────
+function renderCat(){
+  document.getElementById('cat-grid').innerHTML=cat.map((c,i)=>`<div class="cc">
+    <div class="cc-name">${dispName(c.n)}</div>
+    <div class="cc-var">${c.categoria} · 1 ${UNIDAD}</div>
+    <div class="field-row" style="margin-top:8px;">
+      <div class="field"><div class="lbl">Costo sugerido</div><input type="number" id="cat-kp-${i}" value="${c.kp}"/></div>
+      <div class="field"><div class="lbl">Precio sugerido</div><input type="number" id="cat-km-${i}" value="${c.km}"/></div>
+    </div>
+    <button class="btn btn-sm btn-primary" style="margin-top:8px;" onclick="guardarCat(${i})">Guardar</button>
+    <span id="cat-res-${i}" style="font-size:11px;margin-left:6px;"></span>
+  </div>`).join('');
+}
+async function guardarCat(i){
+  const kp=parseInt(document.getElementById(`cat-kp-${i}`).value)||0,km=parseInt(document.getElementById(`cat-km-${i}`).value)||0;
+  const res=document.getElementById(`cat-res-${i}`);
+  try{
+    await sbUpdate('catalogo',`n=eq.${encodeURIComponent(cat[i].n)}`,{kp,km});
+    cat[i].kp=kp;cat[i].km=km;
+    res.style.color='#15803d';res.textContent='✓ Guardado';
+    setTimeout(()=>res.textContent='',2000);
+  }catch(e){res.style.color='#dc2626';res.textContent='Error';}
+}
+
+// ── CLIENTES ──────────────────────────────────────────────────────────────────
+function buildPerfil(key){
+  const esId=key.startsWith('cl_');
+  const ps=pedidos.filter(p=>esId?p.items.some(i=>i.clienteId===key):p.items.some(i=>!i.clienteId&&i.clienteNombre===key));
+  if(!ps.length)return null;
+  const nombre=esId?(clientes.find(c=>c.id===key)?.nombre||key):key;
+  const cliInfo=esId?clientes.find(c=>c.id===key):null;
+  const prod={};let tu=0,tgasto=0,npeds=0;const fechas=[];
+  ps.forEach(p=>{
+    const itsCliente=p.items.filter(i=>esId?i.clienteId===key:(!i.clienteId&&i.clienteNombre===key));
+    if(!itsCliente.length)return;
+    npeds++;fechas.push(p.fecha);
+    itsCliente.forEach(i=>{prod[i.origen]=(prod[i.origen]||0)+(i.cantidad||0);tu+=i.cantidad||0;tgasto+=i.totalP;});
+  });
+  fechas.sort();const ult=fechas[fechas.length-1];
+  const dias=ult?Math.floor((new Date()-new Date(ult+'T12:00:00'))/864e5):null;
+  return{key,nombre,tel:cliInfo?.tel||'',dir:cliInfo?.dir||'',npeds,tu,tgasto,prod,ult,dias};
+}
+function getAllCl(){
+  const keys=new Set();
+  pedidos.forEach(p=>p.items.forEach(i=>{if(i.tipo!=='extra')keys.add(i.clienteId||i.clienteNombre);}));
+  return[...keys].filter(Boolean).map(k=>buildPerfil(k)).filter(Boolean).sort((a,b)=>b.tgasto-a.tgasto);
+}
+function renderClientes(){
+  const cl=getAllCl(),el=document.getElementById('cl-grid'),kpi=document.getElementById('cl-kpi');
+  if(!cl.length){el.innerHTML='<div class="empty" style="grid-column:1/-1;">Sin clientes de huevos todavía.</div>';kpi.innerHTML='';renderDirectorio();return;}
+  const rec=cl.filter(c=>c.npeds>=2).length;
+  kpi.innerHTML=`<div class="kpi"><div class="kpi-lb">Clientes únicos</div><div class="kpi-vl">${cl.length}</div></div><div class="kpi"><div class="kpi-lb">Recurrentes</div><div class="kpi-vl">${rec}</div></div><div class="kpi"><div class="kpi-lb">${UNIDAD}s totales</div><div class="kpi-vl">${cl.reduce((s,c)=>s+c.tu,0)}</div></div>`;
+  el.innerHTML=cl.map(c=>`<div class="clcard" onclick="openModal('${c.key.replace(/'/g,"\\'")}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div class="cl-name">${c.nombre}</div><div class="cl-meta">${c.npeds} pedido${c.npeds>1?'s':''} · ${c.tu} ${UNIDAD}${c.tu!==1?'s':''}${c.tel?' · '+c.tel:''}</div></div>${c.npeds>=2?'<span class="badge bd-green">Recurrente</span>':''}</div></div>`).join('');
+  renderDirectorio();
+}
+function renderDirectorio(){
+  const el=document.getElementById('dir-list');if(!el)return;
+  document.getElementById('dir-count').textContent=clientes.length+' registrados (directorio compartido)';
+  if(!clientes.length){el.innerHTML='<div class="empty">Sin clientes en el directorio.</div>';return;}
+  el.innerHTML=[...clientes].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(c=>`
+    <div class="item-row" style="align-items:flex-start;">
+      <div style="flex:1;min-width:140px;">
+        <div class="item-name">${c.nombre}</div>
+        <div class="idet" id="dir-view-${c.id}">${c.tel||'<span style="color:#d1d5db;">sin teléfono</span>'}${c.dir?' · '+c.dir:''}</div>
+      </div>
+      <button class="btn btn-sm" onclick="toggleEditCliente('${c.id}')" id="dir-btn-${c.id}">Editar</button>
+    </div>
+    <div id="dir-edit-${c.id}" style="display:none;padding:8px 10px;background:#f3f4f6;border-radius:6px;margin:-3px 0 5px;">
+      <div class="field-row">
+        <div class="field"><div class="lbl">Teléfono</div><input type="text" id="dc-tel-${c.id}" value="${c.tel||''}"/></div>
+        <div class="field"><div class="lbl">Dirección</div><input type="text" id="dc-dir-${c.id}" value="${c.dir||''}"/></div>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="saveCliente('${c.id}')">Guardar</button>
+      <button class="btn btn-sm" onclick="toggleEditCliente('${c.id}')">Cancelar</button>
+    </div>`).join('');
+}
+function toggleEditCliente(id){
+  const ed=document.getElementById('dir-edit-'+id),vw=document.getElementById('dir-view-'+id),bt=document.getElementById('dir-btn-'+id);
+  const open=ed.style.display==='block';
+  ed.style.display=open?'none':'block';vw.style.display=open?'block':'none';bt.style.display=open?'inline-block':'none';
+}
+async function saveCliente(id){
+  const tel=document.getElementById('dc-tel-'+id).value.trim(),dir=document.getElementById('dc-dir-'+id).value.trim();
+  try{
+    await sbUpdate('clientes',`id=eq.${id}`,{tel,dir});
+    const c=clientes.find(x=>x.id===id);if(c){c.tel=tel;c.dir=dir;}
+    renderDirectorio();
+  }catch(e){alert('Error guardando en Supabase.');}
+}
+async function addCliente(){
+  const nombre=document.getElementById('dc-nombre').value.trim();
+  const tel=document.getElementById('dc-tel').value.trim();
+  const dir=document.getElementById('dc-dir').value.trim();
+  const notas=document.getElementById('dc-notas').value.trim();
+  const res=document.getElementById('dc-res');
+  if(!nombre){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Ingresa el nombre.</div></div>';return;}
+  if(clientes.some(c=>normTxt(c.nombre)===normTxt(nombre))){res.innerHTML='<div class="alert al-warn"><div class="al-ic">◆</div><div>Ya existe un cliente con ese nombre.</div></div>';return;}
+  const id='cl_'+Date.now();
+  try{
+    await sbInsert('clientes',{id,nombre,tel,dir,notas,creado_en:hoy()});
+    clientes.push({id,nombre,tel,dir,notas,creado:hoy()});
+    ['dc-nombre','dc-tel','dc-dir','dc-notas'].forEach(x=>document.getElementById(x).value='');
+    res.innerHTML=`<div class="alert al-good"><div class="al-ic">✓</div><div><strong>${nombre}</strong> agregado al directorio.</div></div>`;
+    renderDirectorio();fillClienteList();setTimeout(()=>res.innerHTML='',3000);
+  }catch(e){res.innerHTML='<div class="alert al-danger"><div class="al-ic">✗</div><div>Error guardando en Supabase.</div></div>';}
+}
+function openModal(key){
+  const c=buildPerfil(key);if(!c)return;
+  document.getElementById('m-nombre').textContent=c.nombre;
+  const esId=key.startsWith('cl_');
+  const histPeds=pedidos.filter(p=>esId?p.items.some(i=>i.clienteId===key):p.items.some(i=>!i.clienteId&&i.clienteNombre===key));
+  const prodEntries=Object.entries(c.prod).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('m-content').innerHTML=`
+    ${c.tel||c.dir?`<div style="font-size:11px;color:#6b7280;margin-bottom:8px;">${c.tel?'📞 '+c.tel:''}${c.tel&&c.dir?' · ':''}${c.dir?'📍 '+c.dir:''}</div>`:''}
+    <div class="srow3"><div class="st"><div class="stv">${c.npeds}</div><div class="stl">Pedidos</div></div><div class="st"><div class="stv">${c.tu}</div><div class="stl">${UNIDAD}s</div></div><div class="st"><div class="stv">$${Math.round(c.tgasto/1000)}K</div><div class="stl">Gasto</div></div></div>
+    <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;margin-bottom:7px;">Productos</div>
+    <div style="margin-bottom:10px;">${prodEntries.map(([p,k])=>`<span class="fc">${dispName(p)} ${k}</span>`).join('')}</div>
+    <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;margin-bottom:7px;">Historial</div>
+    ${histPeds.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const its=p.items.filter(i=>esId?i.clienteId===key:(!i.clienteId&&i.clienteNombre===key));const ku=its.reduce((s,i)=>s+(i.cantidad||0),0),mp=its.reduce((s,i)=>s+i.totalP,0);return`<div class="hi">${p.fecha} · ${ku} ${UNIDAD}${ku!==1?'s':''} · ${clp(mp)}<br><span>${its.map(i=>dispName(i.origen)+' ×'+i.cantidad).join(' · ')}</span></div>`;}).join('')}
+    ${c.ult?`<div style="font-size:10px;color:#9ca3af;margin-top:8px;">Última: ${c.ult}${c.dias!=null?' (hace '+c.dias+' días)':''}</div>`:''}`;
+  document.getElementById('ov').style.display='flex';
+}
+
+// ── MES ACTUAL ────────────────────────────────────────────────────────────────
+function costoYMargenPedido(p){
+  const costo=p.items.reduce((s,i)=>s+(i.totalCosto||0),0);
+  const venta=p.items.reduce((s,i)=>s+(i.totalP||0),0);
+  return{costo,venta,margen:venta-costo};
+}
+function renderMes(){
+  const mpAll=pedidos.filter(p=>p.mes===MES_ACTUAL);
+  const tu=mpAll.reduce((s,p)=>s+p.items.reduce((a,i)=>a+(i.cantidad||0),0),0);
+  let venta=0,costo=0;mpAll.forEach(p=>{const r=costoYMargenPedido(p);venta+=r.venta;costo+=r.costo;});
+  document.getElementById('kpi-mes').innerHTML=`<div class="kpi"><div class="kpi-lb">Total ${UNIDAD}s</div><div class="kpi-vl">${tu}</div><div class="kpi-sb">${mpAll.length} pedidos</div></div><div class="kpi"><div class="kpi-lb">Ventas</div><div class="kpi-vl">${clp(venta)}</div></div><div class="kpi"><div class="kpi-lb">Margen</div><div class="kpi-vl">${clp(venta-costo)}</div></div>`;
+  document.getElementById('al-mes').innerHTML=mpAll.length?'':'<div class="alert al-info"><div class="al-ic">→</div><div>Sin pedidos este mes aún. Agrega el primero.</div></div>';
+  const ESTADOS={pendiente:'🟡 Pendiente',entregado:'🚚 Entregado',pagado:'✅ Pagado'};
+  document.getElementById('ped-mes').innerHTML=mpAll.length?mpAll.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{const ku=p.items.reduce((s,i)=>s+(i.cantidad||0),0);const r=costoYMargenPedido(p);const est=p.estado||'pendiente';return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:13px;font-weight:500;">${p.codigo||'—'}</div><div style="font-size:11px;color:#6b7280;">${p.fecha} · ${ku} ${UNIDAD}${ku!==1?'s':''} · venta ${clp(r.venta)} · margen <span style="color:${r.margen>=0?'#15803d':'#dc2626'};font-weight:600;">${clp(r.margen)}</span></div></div></div>${p.items.map(i=>`<div style="font-size:11px;color:#6b7280;padding:2px 0;">${dispName(i.origen)} · ${i.cantidad}${i.tipo==='extra'?'':' '+UNIDAD+(i.cantidad>1?'s':'')} · ${clp(i.totalP)}${i.clienteNombre?' · 👤 '+i.clienteNombre:''}</div>`).join('')}<div style="margin-top:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;"><select onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 8px;width:auto;">${Object.entries(ESTADOS).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select><button class="btn btn-sm btn-danger" onclick="delPedido('${p.id}')">Eliminar</button></div></div>`;}).join(''):'';
+}
+async function cambiarEstado(id,val){
+  const p=pedidos.find(x=>x.id==id);if(!p)return;const prev=p.estado;p.estado=val;
+  try{await sbUpdate('pedidos',`id=eq.${id}`,{estado:val});}
+  catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();}
+}
+
+// ── HISTORIAL ─────────────────────────────────────────────────────────────────
+function renderHist(){
+  const pm={};pedidos.forEach(p=>{if(!pm[p.mes])pm[p.mes]=[];pm[p.mes].push(p);});
+  const el=document.getElementById('hist-content');
+  if(!pedidos.length){el.innerHTML='<div class="empty">Sin pedidos registrados.</div>';return;}
+  const ESTL={pendiente:'🟡',entregado:'🚚',pagado:'✅'};
+  el.innerHTML=Object.entries(pm).sort((a,b)=>b[0].localeCompare(a[0])).map(([mes,ps])=>{
+    const u=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+(i.cantidad||0),0),0);
+    let m=0,costoMes=0;ps.forEach(p=>{const r=costoYMargenPedido(p);m+=r.venta;costoMes+=r.costo;});
+    const margenMes=m-costoMes;
+    const filas=ps.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
+      const ku=p.items.reduce((s,i)=>s+(i.cantidad||0),0),r=costoYMargenPedido(p);
+      return`<div class="hi" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">${ESTL[p.estado]||'🟡'} ${p.fecha} · ${p.codigo||'—'} · ${ku} ${UNIDAD}${ku!==1?'s':''} · venta ${clp(r.venta)} · costo ${clp(r.costo)} · <span style="color:${r.margen>=0?'#15803d':'#dc2626'};font-weight:600;">margen ${clp(r.margen)}</span></div>
+        <div style="display:flex;gap:5px;flex-shrink:0;">
+          <button class="btn btn-sm btn-danger" onclick="delPedido('${p.id}')">Eliminar</button>
+        </div></div>`;
+    }).join('');
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleMes('${mes}')">
+        <div><div style="font-size:13px;font-weight:500;">${mes}</div><div style="font-size:11px;color:#6b7280;">${ps.length} pedidos · ${u} ${UNIDAD}${u!==1?'s':''} · venta ${clp(m)} · margen ${clp(margenMes)}</div></div>
+        <span id="mes-arrow-${mes}" style="font-size:11px;color:#9ca3af;">▾ ver</span>
+      </div>
+      <div id="mes-detalle-${mes}" style="display:none;margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">${filas}</div>
+    </div>`;
+  }).join('');
+}
+function toggleMes(mes){
+  const d=document.getElementById('mes-detalle-'+mes),a=document.getElementById('mes-arrow-'+mes);
+  const open=d.style.display==='block';d.style.display=open?'none':'block';a.textContent=open?'▾ ver':'▴ ocultar';
+}
+async function delPedido(id){
+  const p=pedidos.find(x=>x.id==id);if(!p)return;
+  if(!confirm(`¿Eliminar el pedido ${p.codigo||''} (${p.fecha})? Esta acción no se puede deshacer.`))return;
+  try{
+    await sbDelete('pedidos',`id=eq.${id}`);
+    pedidos=pedidos.filter(x=>x.id!=id);
+    renderHist();renderMes();
+  }catch(e){alert('Error eliminando en Supabase.');}
+}
+
+function limpiar(){
+  items=[];
+  document.getElementById('item-cliente').value='';document.getElementById('item-cliente-id').value='';document.getElementById('item-cliente-match').innerHTML='';
+  document.getElementById('cantidad').value='1';
+  document.getElementById('ri').style.display='none';
+  document.getElementById('items-wrap').style.display='none';
+  limpiarExtrasInputs();
+  renderItems();
+  genCodigo();
+}
+
+// INIT
+document.getElementById('hoy-lbl').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('fecha').value=hoy();
+(async function init(){
+  document.body.style.opacity='.5';
+  await load();
+  fillOrigen();fillClienteList();genCodigo();
+  document.body.style.opacity='1';
+})();
+</script>
+</body>
+</html>
