@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conpro — Histórico Consolidado</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,sans-serif;font-size:14px;background:#f9fafb;color:#111;min-height:100vh;}
+.header{background:#1e293b;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+.header-title{font-size:15px;font-weight:600;letter-spacing:.02em;}
+.header-sub{font-size:11px;opacity:.65;margin-top:2px;}
+.container{max-width:760px;margin:0 auto;padding:16px;}
+.tabs{display:flex;border-bottom:1px solid #e5e7eb;margin-bottom:1.2rem;overflow-x:auto;background:#fff;border-radius:8px 8px 0 0;padding:0 8px;}
+.tab{padding:10px 14px;font-size:12px;font-weight:500;color:#6b7280;cursor:pointer;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
+.tab.active{color:#111;border-bottom-color:#1e293b;}
+.panel{display:none;}.panel.active{display:block;}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;}
+.section-title{font-size:13px;font-weight:600;color:#111;margin-bottom:12px;}
+.field{display:flex;flex-direction:column;gap:3px;}
+.lbl{font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;}
+select{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111;}
+.alert{border-radius:6px;padding:9px 12px;font-size:12px;margin-bottom:8px;line-height:1.5;display:flex;gap:8px;align-items:flex-start;}
+.al-info{background:#eff6ff;color:#1e3a5f;border:1px solid #93c5fd;}
+.al-ic{font-size:13px;flex-shrink:0;margin-top:1px;}
+.sep{height:1px;background:#e5e7eb;margin:12px 0;}
+.krow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.kpi{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;}
+.kpi-lb{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+.kpi-vl{font-size:17px;font-weight:600;color:#111;}
+.kpi-sb{font-size:10px;color:#9ca3af;margin-top:1px;}
+.linea-card{border:1px solid #e5e7eb;border-radius:8px;padding:13px 14px;margin-bottom:9px;}
+.linea-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.linea-nombre{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;}
+.linea-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.linea-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.ln{text-align:center;}
+.ln-vl{font-size:14px;font-weight:600;}
+.ln-lb{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+.badge{display:inline-block;font-size:9px;padding:2px 7px;border-radius:20px;font-weight:600;color:#fff;}
+.hi{font-size:11px;color:#6b7280;padding:7px 0;border-bottom:1px solid #e5e7eb;}
+.hi:last-child{border-bottom:none;}
+.empty{text-align:center;padding:2rem;color:#9ca3af;font-size:13px;}
+.clcard{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:9px;}
+.cl-name{font-size:13px;font-weight:500;}.cl-meta{font-size:11px;color:#6b7280;margin-top:1px;}
+.fc{display:inline-block;font-size:9px;padding:2px 7px;border-radius:20px;margin:2px 4px 0 0;color:#fff;font-weight:600;}
+@media(max-width:600px){.krow{grid-template-columns:1fr 1fr;}.linea-nums{grid-template-columns:1fr 1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">📊 Conpro — Histórico Consolidado</div>
+    <div class="header-sub">Café · Frutos Secos · Frutillas · Huevos — solo lectura</div>
+  </div>
+  <div style="font-size:11px;opacity:.6;" id="hoy-lbl"></div>
+  <div style="font-size:9px;opacity:.45;">V1-1</div>
+</div>
+
+<div class="container">
+<div class="alert al-info"><div class="al-ic">ℹ️</div><div>Este tablero solo muestra datos — no se pueden crear, editar ni eliminar pedidos acá. Para eso, usa el gestor de cada línea.</div></div>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('resumen',this)">Resumen</button>
+  <button class="tab" onclick="showTab('historial',this)">Historial</button>
+  <button class="tab" onclick="showTab('clientes',this)">Clientes</button>
+</div>
+
+<!-- RESUMEN -->
+<div id="panel-resumen" class="panel active">
+<div class="card">
+  <div class="field" style="margin-bottom:0;">
+    <div class="lbl">Mes</div>
+    <select id="mes-sel" onchange="renderResumen()"></select>
+  </div>
+</div>
+<div class="card">
+  <div class="section-title">Total Conpro</div>
+  <div class="krow" id="kpi-total" style="margin-bottom:0;"></div>
+</div>
+<div id="lineas-wrap"></div>
+</div>
+
+<!-- HISTORIAL -->
+<div id="panel-historial" class="panel">
+  <div id="hist-content"></div>
+</div>
+
+<!-- CLIENTES -->
+<div id="panel-clientes" class="panel">
+<div class="card">
+  <div class="krow" id="cl-kpi" style="margin-bottom:0;"></div>
+</div>
+<div id="cl-content"></div>
+</div>
+
+</div>
+
+<script>
+// ── SUPABASE (solo lectura) ───────────────────────────────────────────────────
+const SB_URL='https://tgrwscyskqucsxndvyoa.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncndzY3lza3F1Y3N4bmR2eW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MzMzMzMsImV4cCI6MjA5NTQwOTMzM30.YngfJtMSloUopjXFmQnKgLf--crfJ1uNFslxpsujbyk';
+async function sb(path){
+  const r=await fetch(`${SB_URL}/rest/v1/${path}`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
+  if(!r.ok){console.error('SB error',path,await r.text());throw new Error('SB '+r.status);}
+  return r.json();
+}
+async function sbSelect(t,q=''){return sb(`${t}?select=*${q}`);}
+
+// ── LÍNEAS DE PRODUCTO ────────────────────────────────────────────────────────
+// Agrupa proveedores en "líneas" para el resumen (café tiene 3 proveedores pero
+// es una sola línea para Ricardo). Agregar acá cuando se sume una línea nueva.
+const LINEAS=[
+  {id:'cafe',nombre:'Café',color:'#5b3a1e',provIds:[1,2,3]},
+  {id:'fs',nombre:'Frutos Secos',color:'#8b5a2b',provIds:[4]},
+  {id:'frutillas',nombre:'Frutillas',color:'#be123c',provIds:[5]},
+  {id:'huevos',nombre:'Huevos',color:'#a16207',provIds:[6]},
+];
+function lineaDe(provId){return LINEAS.find(l=>l.provIds.includes(provId))||{id:'otro',nombre:'Otro',color:'#6b7280',provIds:[]};}
+
+let provs=[],cat=[],pedidos=[],clientes=[];
+const MES_ACTUAL=new Date().toISOString().slice(0,7);
+
+function clp(n){return'$'+Math.round(n||0).toLocaleString('es-CL');}
+function getProv(id){return provs.find(p=>p.id===id);}
+function getCatFor(provId,origen){return cat.find(c=>c.prov===provId&&c.n===origen);}
+function dispName(n){return(n||'').replace(/\s*x\s*1\s*Kg\s*$/i,'').trim();}
+
+// Margen por pedido: confía en `comision` solo para proveedores tipo 'tramos'
+// (CRL, cuyo cálculo de comisión por tramos no se puede recomponer acá). Para
+// todo lo demás (café-fijo, FS, frutillas, huevos) se deriva de los ítems:
+// frutillas/huevos ya traen totalCosto por ítem; café-fijo/FS lo derivan del
+// catálogo (mismo patrón que usa cada gestor propio).
+function metricsPedido(p){
+  const prov=getProv(p.prov);
+  const venta=p.items.reduce((s,i)=>s+(i.totalP||0),0);
+  if(prov&&prov.tipo_margen==='tramos')return{venta,costo:venta-(p.comision||0),margen:p.comision||0};
+  let costo=0;
+  p.items.forEach(i=>{
+    if(i.totalCosto!==undefined){costo+=i.totalCosto||0;return;}
+    const c=getCatFor(p.prov,i.origen);
+    costo+=c?c.kp*(i.totalKg!=null?i.totalKg:(i.cantidad||0)):0;
+  });
+  return{venta,costo,margen:venta-costo};
+}
+
+async function load(){
+  try{
+    const[provRows,catRows,clis,peds]=await Promise.all([
+      sbSelect('proveedores','&order=id.asc'),
+      sbSelect('catalogo','&order=n.asc'),
+      sbSelect('clientes','&order=creado_en.asc'),
+      sbSelect('pedidos','&order=created_at.asc')
+    ]);
+    provs=provRows.map(p=>({id:p.id,nombre:p.nombre,tipo_margen:p.tipo_margen}));
+    cat=catRows.map(r=>({n:r.n,kp:r.kp||0,km:r.km,prov:r.proveedor_id,categoria:r.categoria||''}));
+    clientes=clis.map(c=>({id:c.id,nombre:c.nombre,tel:c.tel||'',dir:c.dir||''}));
+    pedidos=peds.map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,cliente:p.cliente,items:p.items||[],estado:p.estado||'pendiente',codigo:p.codigo||'',comision:p.comision||0,prov:p.proveedor_id||1}));
+  }catch(e){console.error('Error cargando Supabase',e);alert('No se pudo conectar a Supabase. Revisa tu conexión.');provs=[];cat=[];pedidos=[];clientes=[];}
+}
+
+function mesesDisponibles(){
+  const s=new Set(pedidos.map(p=>p.mes));s.add(MES_ACTUAL);
+  return[...s].sort().reverse();
+}
+function fillMeses(){
+  const sel=document.getElementById('mes-sel');
+  sel.innerHTML=mesesDisponibles().map(m=>`<option value="${m}">${m}</option>`).join('');
+  sel.value=MES_ACTUAL;
+}
+
+function showTab(t,el){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');document.getElementById('panel-'+t).classList.add('active');
+  if(t==='resumen')renderResumen();if(t==='historial')renderHist();if(t==='clientes')renderClientes();
+}
+
+// ── RESUMEN ───────────────────────────────────────────────────────────────────
+function renderResumen(){
+  const mes=document.getElementById('mes-sel').value||MES_ACTUAL;
+  const ps=pedidos.filter(p=>p.mes===mes);
+  let tVenta=0,tCosto=0,tMargen=0;
+  const porLinea={};LINEAS.forEach(l=>porLinea[l.id]={venta:0,costo:0,margen:0,n:0});
+  ps.forEach(p=>{
+    const m=metricsPedido(p),l=lineaDe(p.prov);
+    if(!porLinea[l.id])porLinea[l.id]={venta:0,costo:0,margen:0,n:0};
+    porLinea[l.id].venta+=m.venta;porLinea[l.id].costo+=m.costo;porLinea[l.id].margen+=m.margen;porLinea[l.id].n++;
+    tVenta+=m.venta;tCosto+=m.costo;tMargen+=m.margen;
+  });
+  document.getElementById('kpi-total').innerHTML=`
+    <div class="kpi"><div class="kpi-lb">Ventas</div><div class="kpi-vl">${clp(tVenta)}</div><div class="kpi-sb">${ps.length} pedidos</div></div>
+    <div class="kpi"><div class="kpi-lb">Costo</div><div class="kpi-vl">${clp(tCosto)}</div></div>
+    <div class="kpi"><div class="kpi-lb">Margen</div><div class="kpi-vl" style="color:${tMargen>=0?'#15803d':'#dc2626'};">${clp(tMargen)}</div></div>`;
+  document.getElementById('lineas-wrap').innerHTML=LINEAS.map(l=>{
+    const d=porLinea[l.id]||{venta:0,costo:0,margen:0,n:0};
+    return`<div class="linea-card">
+      <div class="linea-hd">
+        <div class="linea-nombre"><span class="linea-dot" style="background:${l.color};"></span>${l.nombre}</div>
+        <span style="font-size:10px;color:#9ca3af;">${d.n} pedido${d.n===1?'':'s'}</span>
+      </div>
+      <div class="linea-nums">
+        <div class="ln"><div class="ln-vl">${clp(d.venta)}</div><div class="ln-lb">Venta</div></div>
+        <div class="ln"><div class="ln-vl">${clp(d.costo)}</div><div class="ln-lb">Costo</div></div>
+        <div class="ln"><div class="ln-vl" style="color:${d.margen>=0?'#15803d':'#dc2626'};">${clp(d.margen)}</div><div class="ln-lb">Margen</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── HISTORIAL ─────────────────────────────────────────────────────────────────
+const ESTL={pendiente:'🟡',entregado:'🚚',pagado:'✅',finalizado:'⬛'};
+function renderHist(){
+  const pm={};pedidos.forEach(p=>{if(!pm[p.mes])pm[p.mes]=[];pm[p.mes].push(p);});
+  const el=document.getElementById('hist-content');
+  if(!pedidos.length){el.innerHTML='<div class="empty">Sin pedidos registrados todavía.</div>';return;}
+  el.innerHTML=Object.entries(pm).sort((a,b)=>b[0].localeCompare(a[0])).map(([mes,ps])=>{
+    let venta=0,margen=0;ps.forEach(p=>{const m=metricsPedido(p);venta+=m.venta;margen+=m.margen;});
+    const filas=ps.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
+      const m=metricsPedido(p),l=lineaDe(p.prov);
+      return`<div class="hi">
+        <span class="badge" style="background:${l.color};">${l.nombre}</span>
+        ${ESTL[p.estado]||'🟡'} ${p.fecha} · ${p.codigo||'—'} · venta ${clp(m.venta)} · costo ${clp(m.costo)} · <span style="color:${m.margen>=0?'#15803d':'#dc2626'};font-weight:600;">margen ${clp(m.margen)}</span>
+        <div style="margin-top:2px;color:#9ca3af;">${p.cliente||''}</div>
+      </div>`;
+    }).join('');
+    return`<div class="card">
+      <div style="margin-bottom:8px;"><div style="font-size:13px;font-weight:500;">${mes}</div><div style="font-size:11px;color:#6b7280;">${ps.length} pedidos · venta ${clp(venta)} · margen ${clp(margen)}</div></div>
+      ${filas}
+    </div>`;
+  }).join('');
+}
+
+// ── CLIENTES (cruce entre líneas) ─────────────────────────────────────────────
+function perfilClienteGlobal(cl){
+  const porLinea={};LINEAS.forEach(l=>porLinea[l.id]={venta:0,n:0});
+  let total=0,npeds=0;
+  pedidos.forEach(p=>{
+    const its=p.items.filter(i=>i.clienteId===cl.id||(!i.clienteId&&i.clienteNombre&&i.clienteNombre.trim().toLowerCase()===cl.nombre.trim().toLowerCase()));
+    if(!its.length)return;
+    const l=lineaDe(p.prov),venta=its.reduce((s,i)=>s+(i.totalP||0),0);
+    if(!porLinea[l.id])porLinea[l.id]={venta:0,n:0};
+    porLinea[l.id].venta+=venta;porLinea[l.id].n++;
+    total+=venta;npeds++;
+  });
+  return{cl,porLinea,total,npeds,nLineas:Object.values(porLinea).filter(x=>x.n>0).length};
+}
+function renderClientes(){
+  const perfiles=clientes.map(perfilClienteGlobal).filter(p=>p.npeds>0).sort((a,b)=>b.total-a.total);
+  const multi=perfiles.filter(p=>p.nLineas>=2);
+  document.getElementById('cl-kpi').innerHTML=`
+    <div class="kpi"><div class="kpi-lb">Clientes activos</div><div class="kpi-vl">${perfiles.length}</div></div>
+    <div class="kpi"><div class="kpi-lb">Compran 2+ líneas</div><div class="kpi-vl">${multi.length}</div></div>
+    <div class="kpi"><div class="kpi-lb">Gasto total</div><div class="kpi-vl">${clp(perfiles.reduce((s,p)=>s+p.total,0))}</div></div>`;
+  const el=document.getElementById('cl-content');
+  if(!perfiles.length){el.innerHTML='<div class="empty">Sin clientes con pedidos todavía.</div>';return;}
+  el.innerHTML=perfiles.map(p=>`<div class="clcard">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div><div class="cl-name">${p.cl.nombre}</div><div class="cl-meta">${p.npeds} pedido${p.npeds===1?'':'s'} · ${clp(p.total)}${p.cl.tel?' · '+p.cl.tel:''}</div></div>
+    </div>
+    <div style="margin-top:7px;">${LINEAS.filter(l=>p.porLinea[l.id]&&p.porLinea[l.id].n>0).map(l=>`<span class="fc" style="background:${l.color};">${l.nombre} ${clp(p.porLinea[l.id].venta)}</span>`).join('')}</div>
+  </div>`).join('');
+}
+
+// INIT
+document.getElementById('hoy-lbl').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+(async function init(){
+  document.body.style.opacity='.5';
+  await load();
+  fillMeses();renderResumen();
+  document.body.style.opacity='1';
+})();
+</script>
+</body>
+</html>

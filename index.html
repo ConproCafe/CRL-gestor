@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-29</div>
+  <div style="font-size:9px;opacity:.4;">V1-30</div>
 </div>
 
 <div class="container">
@@ -455,6 +455,11 @@ async function sbDelete(t,match){return sb(`${t}?${match}`,{method:'DELETE'});}
 
 let pedidos=[], cat=[], items=[], uAct='kg', clientes=[];
 const MES_ACTUAL=new Date().toISOString().slice(0,7);
+// Café (index.html) comparte las tablas `proveedores`/`catalogo`/`pedidos` con el
+// resto de las líneas (frutos secos, frutillas, huevos). Este archivo solo debe
+// ver SUS propios proveedores (CRL=1, La Ruta del Café=2, Camellones=3) — si se
+// suma un proveedor de café nuevo, agregar su id acá.
+const CAFE_PROV_IDS=[1,2,3];
 
 function normCat(row){return{n:row.n,p:row.p,v:row.v,km:row.km,gm:row.gm,kp:row.kp||0,gp:row.gp||0,ku:row.ku,gu:row.gu,perf:row.perf,on:row.on_stock,nuevo:row.nuevo,bm:row.bm,bkg:row.bkg?parseFloat(row.bkg):null,prov:row.proveedor_id||1,cat:row.categoria||''};}
 function denormCat(c){return{n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,kp:c.kp||0,gp:c.gp||0,ku:c.ku,gu:c.gu,perf:c.perf,on_stock:c.on,nuevo:!!c.nuevo,bm:c.bm||null,bkg:c.bkg||null,proveedor_id:c.prov||1,categoria:c.cat||null};}
@@ -462,10 +467,10 @@ function denormCat(c){return{n:c.n,p:c.p,v:c.v,km:c.km,gm:c.gm,kp:c.kp||0,gp:c.g
 async function load(){
   try{
     const[peds,catRows,clis,provRows]=await Promise.all([sbSelect('pedidos','&order=created_at.asc'),sbSelect('catalogo','&order=n.asc'),sbSelect('clientes','&order=creado_en.asc'),sbSelect('proveedores','&order=id.asc')]);
-    provs=provRows.map(normProv);
+    provs=provRows.filter(p=>CAFE_PROV_IDS.includes(p.id)).map(normProv);
     const tr=provs.find(p=>p.tipo==='tramos');if(tr){CU=tr.cu;CB=tr.cb;CA=tr.ca;}
-    pedidos=peds.map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:p.cliente,clienteId:p.cliente_id||null,contacto:p.contacto||'',cafeNombre:p.cafe_nombre||'',cafeContacto:p.cafe_contacto||'',items:p.items||[],comision:p.comision||0,estado:p.estado||'pendiente',codigo:p.codigo||'',prov:p.proveedor_id||1}));
-    cat=catRows.map(normCat);
+    pedidos=peds.filter(p=>CAFE_PROV_IDS.includes(p.proveedor_id||1)).map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,canal:p.canal,cliente:p.cliente,clienteId:p.cliente_id||null,contacto:p.contacto||'',cafeNombre:p.cafe_nombre||'',cafeContacto:p.cafe_contacto||'',items:p.items||[],comision:p.comision||0,estado:p.estado||'pendiente',codigo:p.codigo||'',prov:p.proveedor_id||1}));
+    cat=catRows.map(normCat).filter(c=>CAFE_PROV_IDS.includes(c.prov));
     clientes=clis.map(c=>({id:c.id,nombre:c.nombre,tel:c.tel||'',dir:c.dir||'',notas:c.notas||'',creado:c.creado_en||''}));
   }catch(e){console.error('Error cargando Supabase',e);alert('No se pudo conectar a Supabase. Revisa tu conexión.');pedidos=[];cat=[];clientes=[];}
 }
