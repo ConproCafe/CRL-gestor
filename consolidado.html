@@ -55,7 +55,7 @@ select{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;borde
     <div class="header-sub">Café · Frutos Secos · Frutillas · Huevos — solo lectura</div>
   </div>
   <div style="font-size:11px;opacity:.6;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.45;">V1-1</div>
+  <div style="font-size:9px;opacity:.45;">V1-2</div>
 </div>
 
 <div class="container">
@@ -126,15 +126,30 @@ function getProv(id){return provs.find(p=>p.id===id);}
 function getCatFor(provId,origen){return cat.find(c=>c.prov===provId&&c.n===origen);}
 function dispName(n){return(n||'').replace(/\s*x\s*1\s*Kg\s*$/i,'').trim();}
 
-// Margen por pedido: confía en `comision` solo para proveedores tipo 'tramos'
-// (CRL, cuyo cálculo de comisión por tramos no se puede recomponer acá). Para
-// todo lo demás (café-fijo, FS, frutillas, huevos) se deriva de los ítems:
-// frutillas/huevos ya traen totalCosto por ítem; café-fijo/FS lo derivan del
-// catálogo (mismo patrón que usa cada gestor propio).
+// Margen por pedido — tiene que coincidir EXACTO con lo que cada gestor le
+// muestra a Ricardo en su propia OC, no una aproximación distinta:
+// - CRL (tramos): la ganancia real tiene dos capas, igual que en la OC de
+//   index.html (genOC, función original): "margen precio" (lo que gana por
+//   vender más caro que el costo real del proveedor, ítem a ítem) MÁS
+//   "comisión" (el monto por tramo de volumen, guardado en pedidos.comision).
+//   `p.comision` solo no basta — hay que sumarle el margen precio, si no se
+//   subcuenta la ganancia real (bug reportado por Ricardo 2026-11-03).
+// - Todo lo demás (café fijo, FS, frutillas, huevos): no tienen esa segunda
+//   capa de comisión, así que el margen es simplemente venta−costo. Frutillas/
+//   huevos ya traen `totalCosto` por ítem; café fijo/FS lo derivan del catálogo.
 function metricsPedido(p){
   const prov=getProv(p.prov);
   const venta=p.items.reduce((s,i)=>s+(i.totalP||0),0);
-  if(prov&&prov.tipo_margen==='tramos')return{venta,costo:venta-(p.comision||0),margen:p.comision||0};
+  if(prov&&prov.tipo_margen==='tramos'){
+    let margenPrecio=0;
+    p.items.forEach(it=>{
+      const c=getCatFor(p.prov,it.origen)||{kp:0,gp:0};
+      const kp=(it.unidad==='250g'||it.unidad==='250gp')?(c.gp||0):(c.kp||0);
+      margenPrecio+=((it.precioU||0)-kp)*(it.totalKg||0);
+    });
+    const margen=margenPrecio+(p.comision||0);
+    return{venta,costo:venta-margen,margen};
+  }
   let costo=0;
   p.items.forEach(i=>{
     if(i.totalCosto!==undefined){costo+=i.totalCosto||0;return;}
@@ -153,7 +168,7 @@ async function load(){
       sbSelect('pedidos','&order=created_at.asc')
     ]);
     provs=provRows.map(p=>({id:p.id,nombre:p.nombre,tipo_margen:p.tipo_margen}));
-    cat=catRows.map(r=>({n:r.n,kp:r.kp||0,km:r.km,prov:r.proveedor_id,categoria:r.categoria||''}));
+    cat=catRows.map(r=>({n:r.n,kp:r.kp||0,gp:r.gp||0,km:r.km,prov:r.proveedor_id,categoria:r.categoria||''}));
     clientes=clis.map(c=>({id:c.id,nombre:c.nombre,tel:c.tel||'',dir:c.dir||''}));
     pedidos=peds.map(p=>({id:p.id,fecha:p.fecha,mes:p.mes,cliente:p.cliente,items:p.items||[],estado:p.estado||'pendiente',codigo:p.codigo||'',comision:p.comision||0,prov:p.proveedor_id||1}));
   }catch(e){console.error('Error cargando Supabase',e);alert('No se pudo conectar a Supabase. Revisa tu conexión.');provs=[];cat=[];pedidos=[];clientes=[];}
