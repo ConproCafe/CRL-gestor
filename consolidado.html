@@ -55,7 +55,7 @@ select{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;borde
     <div class="header-sub">Café · Frutos Secos · Frutillas · Huevos — solo lectura</div>
   </div>
   <div style="font-size:11px;opacity:.6;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.45;">V1-2</div>
+  <div style="font-size:9px;opacity:.45;">V1-3</div>
 </div>
 
 <div class="container">
@@ -145,7 +145,11 @@ function metricsPedido(p){
     p.items.forEach(it=>{
       const c=getCatFor(p.prov,it.origen)||{kp:0,gp:0};
       const kp=(it.unidad==='250g'||it.unidad==='250gp')?(c.gp||0):(c.kp||0);
-      margenPrecio+=((it.precioU||0)-kp)*(it.totalKg||0);
+      // usar totalP (plata real cobrada) en vez de precioU×totalKg: para ítems
+      // tipo "Balde" precioU es precio por balde (no por kg) y pesoKg≠1, así que
+      // precioU×totalKg infla el margen por un factor de pesoKg. totalP ya viene
+      // correcto (precioU×cantidad) sea cual sea el formato del ítem.
+      margenPrecio+=(it.totalP||0)-(kp*(it.totalKg||0));
     });
     const margen=margenPrecio+(p.comision||0);
     return{venta,costo:venta-margen,margen};

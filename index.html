@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-30</div>
+  <div style="font-size:9px;opacity:.4;">V1-31</div>
 </div>
 
 <div class="container">
@@ -802,7 +802,11 @@ function genDoc(p){
   p.items.forEach(it=>{
     const c=cat.find(x=>x.n===it.origen)||{kp:0,gp:0};
     const kp=it.unidad==='250g'||it.unidad==='250gp'?c.gp:c.kp;
-    const mp=(it.precioU-kp)*it.totalKg;
+    // usar totalP (plata real cobrada) en vez de precioU×totalKg: en ítems
+    // "Balde" precioU es precio por balde (no por kg) y pesoKg≠1, así que
+    // precioU×totalKg inflaba el margen por un factor de pesoKg (bug real
+    // descubierto 2026-11-03 vía consolidado.html, pedidos con "Balde 6 Kg").
+    const mp=it.totalP-(kp*it.totalKg);
     margenPrecioTotal+=mp;
   });
   const gananciaTotal=margenPrecioTotal+comTotal;
