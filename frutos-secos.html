@@ -101,7 +101,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Conpro · Canal Comunidad WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.6;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.45;">V1-4</div>
+  <div style="font-size:9px;opacity:.45;">V1-5</div>
 </div>
 
 <div class="container">
@@ -863,7 +863,7 @@ function renderMes(){
 async function cambiarEstado(id,val){
   const p=pedidos.find(x=>x.id==id);if(!p)return;const prev=p.estado;p.estado=val;
   try{await sbUpdate('pedidos',`id=eq.${id}`,{estado:val});}
-  catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();}
+  catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();renderHist();}
 }
 function verOC(id){
   const p=pedidos.find(x=>x.id==id);if(!p)return;
@@ -883,16 +883,17 @@ function renderHist(){
   const pm={};pedidos.forEach(p=>{if(!pm[p.mes])pm[p.mes]=[];pm[p.mes].push(p);});
   const el=document.getElementById('hist-content');
   if(!pedidos.length){el.innerHTML='<div class="empty">Sin pedidos registrados.</div>';return;}
-  const ESTL={pendiente:'🟡',entregado:'🚚',pagado:'✅',finalizado:'⬛'};
+  const ESTADOSH={pendiente:'🟡 Pendiente',entregado:'🚚 Entregado',pagado:'✅ Pagado',finalizado:'⬛ Finalizado'};
   const costoPedido=p=>p.items.reduce((s,i)=>{const c=getCat(i.origen);return s+(c?c.kp*i.totalKg:0);},0);
   el.innerHTML=Object.entries(pm).sort((a,b)=>b[0].localeCompare(a[0])).map(([mes,ps])=>{
     const kg=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0),m=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0),0);
     const costoMes=ps.reduce((s,p)=>s+costoPedido(p),0),margenMes=m-costoMes;
     const filas=ps.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
-      const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0),costo=costoPedido(p),margen=mp-costo;
+      const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0),costo=costoPedido(p),margen=mp-costo,est=p.estado||'pendiente';
       return`<div class="hi" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">${ESTL[p.estado]||'🟡'} ${p.fecha} · ${p.codigo||'—'} · ${kp.toFixed(0)}kg · venta ${clp(mp)} · costo ${clp(costo)} · <span style="color:${margen>=0?'#15803d':'#dc2626'};font-weight:600;">margen ${clp(margen)}</span></div>
-        <div style="display:flex;gap:5px;flex-shrink:0;">
+        <div style="flex:1;min-width:160px;">${p.fecha} · ${p.codigo||'—'} · ${kp.toFixed(0)}kg · venta ${clp(mp)} · costo ${clp(costo)} · <span style="color:${margen>=0?'#15803d':'#dc2626'};font-weight:600;">margen ${clp(margen)}</span></div>
+        <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;">
+          <select onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 6px;width:auto;">${Object.entries(ESTADOSH).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select>
           <button class="btn btn-sm" onclick="verOC('${p.id}')">Ver documentos</button>
           <button class="btn btn-sm btn-danger" onclick="delPedido('${p.id}')">Eliminar</button>
         </div></div>`;

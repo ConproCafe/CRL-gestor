@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Coffee Roasting Labs · Canal Mayorista WhatsApp</div>
   </div>
   <div style="font-size:11px;opacity:.5;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.4;">V1-31</div>
+  <div style="font-size:9px;opacity:.4;">V1-32</div>
 </div>
 
 <div class="container">
@@ -1334,7 +1334,7 @@ async function genReporte(){
 async function cambiarEstado(id,val){
   const p=pedidos.find(x=>x.id==id);if(!p)return;const prev=p.estado;p.estado=val;
   try{await sbUpdate('pedidos',`id=eq.${id}`,{estado:val});}
-  catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();}
+  catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();renderHist();}
 }
 let pedidoEnEdicion=null;
 function verOC(id){const p=pedidos.find(x=>x.id==id);if(!p)return;
@@ -1371,14 +1371,16 @@ function renderHist(){
   const pm={};pedidos.forEach(p=>{if(!pm[p.mes])pm[p.mes]=[];pm[p.mes].push(p);});
   const el=document.getElementById('hist-content');
   if(!pedidos.length){el.innerHTML='<div class="empty">Sin pedidos registrados.</div>';return;}
-  const ESTL={pendiente:'🟡',entregado:'🚚',pagado:'✅',finalizado:'⬛'};
+  const ESTADOSH={pendiente:'🟡 Pendiente',entregado:'🚚 Entregado',pagado:'✅ Pagado',finalizado:'⬛ Finalizado'};
   el.innerHTML=Object.entries(pm).sort((a,b)=>b[0].localeCompare(a[0])).map(([mes,ps])=>{
     const kg=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalKg,0),0),m=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.totalP,0)+(p.canal==='cafeteria'?3500:0),0),com=ps.reduce((s,p)=>s+(p.comision||0),0);
     const filas=ps.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
       const kp=p.items.reduce((s,i)=>s+i.totalKg,0),mp=p.items.reduce((s,i)=>s+i.totalP,0)+(p.canal==='cafeteria'?3500:0);
+      const est=p.estado||'pendiente';
       return`<div class="hi" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">${ESTL[p.estado]||'🟡'} ${p.fecha} · ${p.cliente} · ${kp.toFixed(2)}kg · $${mp.toLocaleString('es-CL')}</div>
-        <div style="display:flex;gap:5px;flex-shrink:0;">
+        <div style="flex:1;min-width:160px;">${p.fecha} · ${p.cliente} · ${kp.toFixed(2)}kg · $${mp.toLocaleString('es-CL')}</div>
+        <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;">
+          <select id="est-sel-${p.id}" onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 6px;width:auto;">${Object.entries(ESTADOSH).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select>
           <button class="btn btn-sm" onclick="verOC('${p.id}')">Ver/Editar OC</button>
           <button class="btn btn-sm btn-danger" onclick="delPedido('${p.id}','${mes}')">Eliminar</button>
         </div></div>`;

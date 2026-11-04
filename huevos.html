@@ -89,7 +89,7 @@ textarea{resize:vertical;min-height:52px;}
     <div class="header-sub">Conpro · Costo variable por temporada</div>
   </div>
   <div style="font-size:11px;opacity:.6;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.45;">V1-1</div>
+  <div style="font-size:9px;opacity:.45;">V1-2</div>
 </div>
 
 <div class="container">
@@ -591,7 +591,7 @@ function renderMes(){
 async function cambiarEstado(id,val){
   const p=pedidos.find(x=>x.id==id);if(!p)return;const prev=p.estado;p.estado=val;
   try{await sbUpdate('pedidos',`id=eq.${id}`,{estado:val});}
-  catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();}
+  catch(e){p.estado=prev;alert('Error actualizando estado en Supabase.');renderMes();renderHist();}
 }
 
 // ── HISTORIAL ─────────────────────────────────────────────────────────────────
@@ -599,16 +599,17 @@ function renderHist(){
   const pm={};pedidos.forEach(p=>{if(!pm[p.mes])pm[p.mes]=[];pm[p.mes].push(p);});
   const el=document.getElementById('hist-content');
   if(!pedidos.length){el.innerHTML='<div class="empty">Sin pedidos registrados.</div>';return;}
-  const ESTL={pendiente:'🟡',entregado:'🚚',pagado:'✅'};
+  const ESTADOSH={pendiente:'🟡 Pendiente',entregado:'🚚 Entregado',pagado:'✅ Pagado'};
   el.innerHTML=Object.entries(pm).sort((a,b)=>b[0].localeCompare(a[0])).map(([mes,ps])=>{
     const u=ps.reduce((s,p)=>s+p.items.reduce((a,i)=>a+(i.cantidad||0),0),0);
     let m=0,costoMes=0;ps.forEach(p=>{const r=costoYMargenPedido(p);m+=r.venta;costoMes+=r.costo;});
     const margenMes=m-costoMes;
     const filas=ps.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(p=>{
-      const ku=p.items.reduce((s,i)=>s+(i.cantidad||0),0),r=costoYMargenPedido(p);
+      const ku=p.items.reduce((s,i)=>s+(i.cantidad||0),0),r=costoYMargenPedido(p),est=p.estado||'pendiente';
       return`<div class="hi" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">${ESTL[p.estado]||'🟡'} ${p.fecha} · ${p.codigo||'—'} · ${ku} ${UNIDAD}${ku!==1?'s':''} · venta ${clp(r.venta)} · costo ${clp(r.costo)} · <span style="color:${r.margen>=0?'#15803d':'#dc2626'};font-weight:600;">margen ${clp(r.margen)}</span></div>
-        <div style="display:flex;gap:5px;flex-shrink:0;">
+        <div style="flex:1;min-width:160px;">${p.fecha} · ${p.codigo||'—'} · ${ku} ${UNIDAD}${ku!==1?'s':''} · venta ${clp(r.venta)} · costo ${clp(r.costo)} · <span style="color:${r.margen>=0?'#15803d':'#dc2626'};font-weight:600;">margen ${clp(r.margen)}</span></div>
+        <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;">
+          <select onchange="cambiarEstado(${p.id},this.value)" style="font-size:11px;padding:4px 6px;width:auto;">${Object.entries(ESTADOSH).map(([v,l])=>`<option value="${v}"${est===v?' selected':''}>${l}</option>`).join('')}</select>
           <button class="btn btn-sm btn-danger" onclick="delPedido('${p.id}')">Eliminar</button>
         </div></div>`;
     }).join('');
