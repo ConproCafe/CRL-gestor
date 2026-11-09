@@ -52,10 +52,10 @@ select{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;borde
 <div class="header">
   <div>
     <div class="header-title">📊 Conpro — Histórico Consolidado</div>
-    <div class="header-sub">Café · Frutos Secos · Frutillas · Huevos — solo lectura</div>
+    <div class="header-sub">Café · Frutos Secos · Frutillas · Huevos · Aceite de Oliva — solo lectura</div>
   </div>
   <div style="font-size:11px;opacity:.6;" id="hoy-lbl"></div>
-  <div style="font-size:9px;opacity:.45;">V1-3</div>
+  <div style="font-size:9px;opacity:.45;">V1-4</div>
 </div>
 
 <div class="container">
@@ -115,6 +115,7 @@ const LINEAS=[
   {id:'fs',nombre:'Frutos Secos',color:'#8b5a2b',provIds:[4]},
   {id:'frutillas',nombre:'Frutillas',color:'#be123c',provIds:[5]},
   {id:'huevos',nombre:'Huevos',color:'#a16207',provIds:[6]},
+  {id:'aceite',nombre:'Aceite de Oliva',color:'#65a30d',provIds:[7]},
 ];
 function lineaDe(provId){return LINEAS.find(l=>l.provIds.includes(provId))||{id:'otro',nombre:'Otro',color:'#6b7280',provIds:[]};}
 
